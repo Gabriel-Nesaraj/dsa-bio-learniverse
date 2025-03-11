@@ -18,7 +18,7 @@ interface Problem {
 
 interface ProblemListProps {
   difficulty?: Difficulty;
-  category?: string;
+  category?: string | null;
 }
 
 const ProblemList: React.FC<ProblemListProps> = ({ difficulty, category }) => {
