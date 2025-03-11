@@ -1,123 +1,137 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import Hero from '@/components/home/Hero';
-import ModuleCard from '@/components/home/ModuleCard';
-import LearningPath from '@/components/home/LearningPath';
-import VisualComponent from '@/components/home/VisualComponent';
-import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { 
   Network, 
   ListTree, 
   Search, 
   AlignLeft, 
   GraduationCap, 
-  BookOpenCheck
+  BookOpenCheck,
+  Code,
+  CheckCircle2,
+  Clock,
+  BarChart3,
+  Filter
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import AnimatedContainer from '@/components/ui/AnimatedContainer';
+import ProblemList from '@/components/problems/ProblemList';
 
 const Index = () => {
-  // Module data for our cards
-  const modules = [
-    {
-      title: "Graph Algorithms",
-      description: "Explore graph algorithms like DFS, BFS, and Dijkstra's algorithm in the context of protein-protein interaction networks.",
-      icon: <Network className="w-6 h-6" />,
-      link: "/modules/graph-algorithms",
-      accentColor: "bg-blue-100 text-blue-600"
-    },
-    {
-      title: "Tree Data Structures",
-      description: "Learn about tree data structures through the lens of phylogenetic trees and hierarchical clustering of gene expression data.",
-      icon: <ListTree className="w-6 h-6" />,
-      link: "/modules/tree-data-structures",
-      accentColor: "bg-green-100 text-green-600"
-    },
-    {
-      title: "Search Algorithms",
-      description: "Master various search algorithms and their applications in finding patterns in DNA sequences and database searches.",
-      icon: <Search className="w-6 h-6" />,
-      link: "/modules/search-algorithms",
-      accentColor: "bg-purple-100 text-purple-600"
-    },
-    {
-      title: "Dynamic Programming",
-      description: "Understand dynamic programming through sequence alignment algorithms like Needleman-Wunsch and Smith-Waterman.",
-      icon: <AlignLeft className="w-6 h-6" />,
-      link: "/modules/dynamic-programming",
-      accentColor: "bg-amber-100 text-amber-600"
-    },
-    {
-      title: "Machine Learning",
-      description: "Apply machine learning algorithms to predict protein structure, gene function, and disease associations.",
-      icon: <GraduationCap className="w-6 h-6" />,
-      link: "/modules/machine-learning",
-      accentColor: "bg-pink-100 text-pink-600"
-    },
-    {
-      title: "Combinatorial Algorithms",
-      description: "Explore combinatorial algorithms for motif finding, primer design, and sequence assembly problems.",
-      icon: <BookOpenCheck className="w-6 h-6" />,
-      link: "/modules/combinatorial-algorithms",
-      accentColor: "bg-indigo-100 text-indigo-600"
-    }
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       
-      <main className="flex-grow">
-        {/* Hero Section */}
-        <Hero />
+      <main className="flex-grow container mx-auto px-4 py-8 mt-16">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">BioDSA: Learn DSA through Bioinformatics</h1>
+          <p className="text-muted-foreground">
+            Master data structures and algorithms by solving real-world bioinformatics problems
+          </p>
+        </div>
         
-        {/* Modules Section */}
-        <section className="py-16">
-          <div className="container px-4 mx-auto">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <AnimatedContainer>
-                <h2 className="text-3xl font-bold mb-4">Explore Learning Modules</h2>
-                <p className="text-muted-foreground">
-                  Discover how classic algorithms and data structures are applied to solve complex biological problems.
-                </p>
-              </AnimatedContainer>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {modules.map((module, i) => (
-                <AnimatedContainer key={module.title} animation="scale" delay={i < 3 ? 'none' : i < 6 ? 'short' : 'medium'}>
-                  <ModuleCard {...module} />
-                </AnimatedContainer>
-              ))}
-            </div>
-            
-            <div className="text-center mt-12">
-              <Button variant="outline" size="lg">
-                View All Modules
-              </Button>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left sidebar with problem categories */}
+          <div className="lg:col-span-1">
+            <Card className="p-4">
+              <h2 className="font-semibold mb-4">Problem Categories</h2>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/problems/graph-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <Network className="w-4 h-4 text-blue-500" />
+                    <span>Graph Algorithms</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/problems/tree-data-structures" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <ListTree className="w-4 h-4 text-green-500" />
+                    <span>Tree Data Structures</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/problems/search-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <Search className="w-4 h-4 text-purple-500" />
+                    <span>Search Algorithms</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/problems/dynamic-programming" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <AlignLeft className="w-4 h-4 text-amber-500" />
+                    <span>Dynamic Programming</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/problems/machine-learning" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <GraduationCap className="w-4 h-4 text-pink-500" />
+                    <span>Machine Learning</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/problems/combinatorial-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
+                    <BookOpenCheck className="w-4 h-4 text-indigo-500" />
+                    <span>Combinatorial Algorithms</span>
+                  </Link>
+                </li>
+              </ul>
+            </Card>
           </div>
-        </section>
-        
-        {/* Learning Path Section */}
-        <LearningPath />
-        
-        {/* Visual Component Section */}
-        <VisualComponent />
-        
-        {/* Call to Action Section */}
-        <section className="py-20 bg-primary/5">
-          <div className="container px-4 mx-auto text-center">
-            <AnimatedContainer className="max-w-2xl mx-auto">
-              <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
-              <p className="text-muted-foreground mb-8">
-                Join thousands of students who are learning data structures and algorithms through the lens of bioinformatics.
-              </p>
-              <Button size="lg">Begin Learning Now</Button>
-            </AnimatedContainer>
+          
+          {/* Main content area with problem list */}
+          <div className="lg:col-span-3">
+            <Card className="overflow-hidden">
+              <Tabs defaultValue="all" className="w-full">
+                <div className="px-4 py-3 border-b flex justify-between items-center">
+                  <TabsList>
+                    <TabsTrigger value="all">All Problems</TabsTrigger>
+                    <TabsTrigger value="easy">Easy</TabsTrigger>
+                    <TabsTrigger value="medium">Medium</TabsTrigger>
+                    <TabsTrigger value="hard">Hard</TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm">
+                      <Filter className="w-4 h-4 mr-1" />
+                      Filter
+                    </Button>
+                  </div>
+                </div>
+                
+                <TabsContent value="all" className="m-0">
+                  <ProblemList />
+                </TabsContent>
+                <TabsContent value="easy" className="m-0">
+                  <ProblemList difficulty="easy" />
+                </TabsContent>
+                <TabsContent value="medium" className="m-0">
+                  <ProblemList difficulty="medium" />
+                </TabsContent>
+                <TabsContent value="hard" className="m-0">
+                  <ProblemList difficulty="hard" />
+                </TabsContent>
+              </Tabs>
+            </Card>
           </div>
-        </section>
+        </div>
+        
+        {/* Call to action section */}
+        <AnimatedContainer className="mt-12 text-center max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold mb-4">Ready to start solving?</h2>
+          <p className="text-muted-foreground mb-6">
+            Challenge yourself with real-world bioinformatics problems and improve your DSA skills.
+          </p>
+          <Button size="lg" asChild>
+            <Link to="/problems">
+              Start Solving Now
+            </Link>
+          </Button>
+        </AnimatedContainer>
       </main>
       
       <Footer />
