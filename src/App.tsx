@@ -34,17 +34,19 @@ const App = () => (
           
           {/* Auth routes */}
           <Route path="/login" element={
-            <ClerkLoading>
-              <div className="h-screen flex items-center justify-center">Loading...</div>
-            </ClerkLoading>
-            <ClerkLoaded>
-              <SignedIn>
-                <Account />
-              </SignedIn>
-              <SignedOut>
-                <Login />
-              </SignedOut>
-            </ClerkLoaded>
+            <>
+              <ClerkLoading>
+                <div className="h-screen flex items-center justify-center">Loading...</div>
+              </ClerkLoading>
+              <ClerkLoaded>
+                <SignedIn>
+                  <Account />
+                </SignedIn>
+                <SignedOut>
+                  <Login />
+                </SignedOut>
+              </ClerkLoaded>
+            </>
           } />
           <Route path="/signup" element={
             <ClerkLoaded>
