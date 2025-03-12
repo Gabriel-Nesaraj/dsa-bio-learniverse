@@ -11,10 +11,31 @@ import { ArrowLeft, CheckCircle2, Clock, BarChart3, AlertCircle } from 'lucide-r
 import CodeEditor from '@/components/problems/CodeEditor';
 import ProblemDescription from '@/components/problems/ProblemDescription';
 import TestCases from '@/components/problems/TestCases';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from "sonner";
+
+// Define supported languages
+const SUPPORTED_LANGUAGES = [
+  { id: 'cpp', name: 'C++' },
+  { id: 'java', name: 'Java' },
+  { id: 'javascript', name: 'JavaScript' },
+  { id: 'python', name: 'Python' },
+  { id: 'ruby', name: 'Ruby' },
+  { id: 'swift', name: 'Swift' },
+  { id: 'kotlin', name: 'Kotlin' },
+  { id: 'csharp', name: 'C#' },
+  { id: 'go', name: 'Go' },
+  { id: 'rust', name: 'Rust' },
+  { id: 'scala', name: 'Scala' },
+  { id: 'typescript', name: 'TypeScript' },
+];
 
 const ProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState('description');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [userCode, setUserCode] = useState('');
+  const [isCodeSubmitting, setIsCodeSubmitting] = useState(false);
   
   // This would be fetched from an API in a real app
   const problem = {
@@ -51,8 +72,146 @@ const ProblemDetail = () => {
 
 # Example usage:
 # result = needleman_wunsch("ACGTACGT", "ACGTCT")
-# print(result)`
+# print(result)`,
+      cpp: `#include <string>
+#include <vector>
+#include <iostream>
+
+std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::string& seq1, const std::string& seq2) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+}
+
+// Example usage:
+// auto result = needlemanWunsch("ACGTACGT", "ACGTCT");
+// std::cout << result.first << std::endl;`,
+      java: `class Solution {
+    public static class AlignmentResult {
+        int score;
+        String alignedSeq1;
+        String alignedSeq2;
+        
+        public AlignmentResult(int score, String alignedSeq1, String alignedSeq2) {
+            this.score = score;
+            this.alignedSeq1 = alignedSeq1;
+            this.alignedSeq2 = alignedSeq2;
+        }
     }
+    
+    public AlignmentResult needlemanWunsch(String seq1, String seq2) {
+        // Your implementation here
+        // Return the optimal alignment score and the aligned sequences
+        return null;
+    }
+}`,
+      go: `package main
+
+import "fmt"
+
+type AlignmentResult struct {
+	Score       int
+	AlignedSeq1 string
+	AlignedSeq2 string
+}
+
+func needlemanWunsch(seq1, seq2 string) AlignmentResult {
+	// Your implementation here
+	// Return the optimal alignment score and the aligned sequences
+	return AlignmentResult{}
+}`,
+      ruby: `def needleman_wunsch(seq1, seq2)
+  # Your implementation here
+  # Return the optimal alignment score and the aligned sequences
+end
+
+# Example usage:
+# result = needleman_wunsch("ACGTACGT", "ACGTCT")
+# puts result`,
+      rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    (0, String::new(), String::new())
+}`,
+      swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    return (0, "", "")
+}`,
+      kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
+
+fun needlemanWunsch(seq1: String, seq2: String): AlignmentResult {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    return AlignmentResult(0, "", "")
+}`,
+      csharp: `using System;
+
+public class Solution {
+    public class AlignmentResult {
+        public int Score { get; set; }
+        public string AlignedSeq1 { get; set; }
+        public string AlignedSeq2 { get; set; }
+    }
+    
+    public AlignmentResult NeedlemanWunsch(string seq1, string seq2) {
+        // Your implementation here
+        // Return the optimal alignment score and the aligned sequences
+        return new AlignmentResult();
+    }
+}`,
+      typescript: `interface AlignmentResult {
+  score: number;
+  alignedSeq1: string;
+  alignedSeq2: string;
+}
+
+function needlemanWunsch(seq1: string, seq2: string): AlignmentResult {
+  // Your implementation here
+  // Return the optimal alignment score and the aligned sequences
+  return { score: 0, alignedSeq1: '', alignedSeq2: '' };
+}`,
+      scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
+
+object Solution {
+  def needlemanWunsch(seq1: String, seq2: String): AlignmentResult = {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    AlignmentResult(0, "", "")
+  }
+}`
+    }
+  };
+
+  // Set user code when language changes
+  React.useEffect(() => {
+    if (problem.starterCode[selectedLanguage]) {
+      setUserCode(problem.starterCode[selectedLanguage]);
+    } else {
+      setUserCode(`// No starter code available for ${selectedLanguage}`);
+    }
+  }, [selectedLanguage]);
+
+  const handleCodeChange = (newCode: string) => {
+    setUserCode(newCode);
+  };
+
+  const handleRunTests = () => {
+    toast.info("Running tests...");
+    // In a real app, this would send the code to a backend for testing
+    setTimeout(() => {
+      toast.success("Tests completed!");
+    }, 1500);
+  };
+
+  const handleSubmit = () => {
+    setIsCodeSubmitting(true);
+    toast.info("Submitting solution...");
+    
+    // In a real app, this would send the code to a backend for evaluation
+    setTimeout(() => {
+      setIsCodeSubmitting(false);
+      toast.success("Solution submitted successfully!");
+    }, 2000);
   };
 
   if (!problem) {
@@ -173,18 +332,27 @@ const ProblemDetail = () => {
           <div className="space-y-6">
             <Card className="overflow-hidden">
               <div className="border-b p-3 flex justify-between items-center">
-                <Tabs defaultValue="javascript" className="w-auto">
-                  <TabsList>
-                    <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-                    <TabsTrigger value="python">Python</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <Button variant="outline" size="sm">Reset Code</Button>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.id} value={lang.id}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => setUserCode(problem.starterCode[selectedLanguage] || '')}>
+                  Reset Code
+                </Button>
               </div>
               
               <CodeEditor 
-                language="javascript" 
-                code={problem.starterCode.javascript} 
+                language={selectedLanguage} 
+                code={userCode} 
+                onChange={handleCodeChange}
               />
             </Card>
             
@@ -196,8 +364,10 @@ const ProblemDetail = () => {
                 <TestCases />
                 
                 <div className="mt-4 flex justify-between">
-                  <Button variant="outline">Run Tests</Button>
-                  <Button>Submit</Button>
+                  <Button variant="outline" onClick={handleRunTests}>Run Tests</Button>
+                  <Button onClick={handleSubmit} disabled={isCodeSubmitting}>
+                    {isCodeSubmitting ? 'Submitting...' : 'Submit'}
+                  </Button>
                 </div>
               </div>
             </Card>
