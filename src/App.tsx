@@ -16,65 +16,72 @@ import Algorithms from "./pages/Algorithms";
 import DataStructures from "./pages/DataStructures";
 import About from "./pages/About";
 
+// Create a new query client instance
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/problems" element={<Problems />} />
-          <Route path="/problem/:slug" element={<ProblemDetail />} />
-          <Route path="/algorithms" element={<Algorithms />} />
-          <Route path="/data-structures" element={<DataStructures />} />
-          <Route path="/about" element={<About />} />
-          
-          {/* Auth routes */}
-          <Route path="/login" element={
-            <>
-              <ClerkLoading>
-                <div className="h-screen flex items-center justify-center">Loading...</div>
-              </ClerkLoading>
-              <ClerkLoaded>
-                <SignedIn>
-                  <Account />
-                </SignedIn>
-                <SignedOut>
-                  <Login />
-                </SignedOut>
-              </ClerkLoaded>
-            </>
-          } />
-          <Route path="/signup" element={
-            <ClerkLoaded>
-              <SignedIn>
-                <Account />
-              </SignedIn>
-              <SignedOut>
-                <Signup />
-              </SignedOut>
-            </ClerkLoaded>
-          } />
-          <Route path="/account" element={
-            <ClerkLoaded>
-              <SignedIn>
-                <Account />
-              </SignedIn>
-              <SignedOut>
-                <Login />
-              </SignedOut>
-            </ClerkLoaded>
-          } />
-          
-          {/* Catch-all route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/problems" element={<Problems />} />
+            <Route path="/problem/:slug" element={<ProblemDetail />} />
+            <Route path="/algorithms" element={<Algorithms />} />
+            <Route path="/data-structures" element={<DataStructures />} />
+            <Route path="/about" element={<About />} />
+            
+            {/* Auth routes */}
+            <Route path="/login" element={
+              <>
+                <ClerkLoading>
+                  <div className="h-screen flex items-center justify-center">Loading...</div>
+                </ClerkLoading>
+                <ClerkLoaded>
+                  <SignedIn>
+                    <Account />
+                  </SignedIn>
+                  <SignedOut>
+                    <Login />
+                  </SignedOut>
+                </ClerkLoaded>
+              </>
+            } />
+            <Route path="/signup" element={
+              <>
+                <ClerkLoaded>
+                  <SignedIn>
+                    <Account />
+                  </SignedIn>
+                  <SignedOut>
+                    <Signup />
+                  </SignedOut>
+                </ClerkLoaded>
+              </>
+            } />
+            <Route path="/account" element={
+              <>
+                <ClerkLoaded>
+                  <SignedIn>
+                    <Account />
+                  </SignedIn>
+                  <SignedOut>
+                    <Login />
+                  </SignedOut>
+                </ClerkLoaded>
+              </>
+            } />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
