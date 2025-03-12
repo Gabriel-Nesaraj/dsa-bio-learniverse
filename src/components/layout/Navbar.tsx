@@ -1,13 +1,18 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dna, Menu, X } from 'lucide-react';
+import { Dna, Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +22,15 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully",
+    });
+    navigate('/');
+  };
 
   const navItems = [
     { name: 'Home', path: '/' },
@@ -52,6 +66,43 @@ const Navbar = () => {
               {item.name}
             </Link>
           ))}
+          
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <User className="w-4 h-4 text-primary" />
+                <span className="text-sm">{user.name}</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                className="flex items-center gap-1"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                asChild
+              >
+                <Link to="/login" className="flex items-center gap-1">
+                  <LogIn className="w-4 h-4" />
+                  Login
+                </Link>
+              </Button>
+              <Button 
+                size="sm" 
+                asChild
+              >
+                <Link to="/signup">Sign up</Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Mobile menu toggle */}
@@ -81,6 +132,45 @@ const Navbar = () => {
               {item.name}
             </Link>
           ))}
+          
+          {user ? (
+            <>
+              <div className="flex items-center py-2">
+                <User className="w-4 h-4 text-primary mr-2" />
+                <span>{user.name}</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                className="justify-start"
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link 
+                to="/login"
+                className="flex items-center py-2 text-foreground/80 hover:text-primary transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Link>
+              <Link 
+                to="/signup"
+                className="flex items-center py-2 text-foreground/80 hover:text-primary transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
