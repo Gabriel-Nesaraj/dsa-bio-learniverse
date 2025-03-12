@@ -36,6 +36,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         style={{ tabSize: 2 }}
         readOnly={readOnly}
         placeholder="Write your solution here..."
+        spellCheck="false"
+        autoCapitalize="none"
+        autoComplete="off"
+        autoCorrect="off"
       />
       {readOnly && (
         <div className="text-center p-4 text-muted-foreground text-xs">

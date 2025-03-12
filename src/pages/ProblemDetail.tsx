@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -14,7 +13,6 @@ import TestCases from '@/components/problems/TestCases';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
 
-// Define supported languages
 const SUPPORTED_LANGUAGES = [
   { id: 'cpp', name: 'C++' },
   { id: 'java', name: 'Java' },
@@ -37,7 +35,6 @@ const ProblemDetail = () => {
   const [userCode, setUserCode] = useState('');
   const [isCodeSubmitting, setIsCodeSubmitting] = useState(false);
   
-  // This would be fetched from an API in a real app
   const problem = {
     id: 1,
     title: "DNA Sequence Alignment",
@@ -182,7 +179,6 @@ object Solution {
     }
   };
 
-  // Set user code when language changes
   React.useEffect(() => {
     if (problem.starterCode[selectedLanguage]) {
       setUserCode(problem.starterCode[selectedLanguage]);
@@ -196,10 +192,9 @@ object Solution {
   };
 
   const handleRunTests = () => {
-    toast.info("Running tests...");
-    // In a real app, this would send the code to a backend for testing
+    toast.info("Running all tests...");
     setTimeout(() => {
-      toast.success("Tests completed!");
+      toast.success("All tests completed!");
     }, 1500);
   };
 
@@ -207,7 +202,6 @@ object Solution {
     setIsCodeSubmitting(true);
     toast.info("Submitting solution...");
     
-    // In a real app, this would send the code to a backend for evaluation
     setTimeout(() => {
       setIsCodeSubmitting(false);
       toast.success("Solution submitted successfully!");
@@ -240,7 +234,6 @@ object Solution {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 py-6 mt-16 mb-8">
-        {/* Problem header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-muted-foreground mb-4">
             <Button variant="ghost" size="sm" className="p-0 h-auto" asChild>
@@ -269,7 +262,6 @@ object Solution {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left side - Problem description */}
           <Card className="overflow-hidden">
             <Tabs defaultValue="description" onValueChange={setActiveTab}>
               <TabsList className="w-full rounded-none border-b bg-transparent h-auto p-0">
@@ -328,7 +320,6 @@ object Solution {
             </Tabs>
           </Card>
           
-          {/* Right side - Code editor */}
           <div className="space-y-6">
             <Card className="overflow-hidden">
               <div className="border-b p-3 flex justify-between items-center">
@@ -361,10 +352,13 @@ object Solution {
                 <h3 className="font-medium">Test Cases</h3>
               </div>
               <div className="p-4">
-                <TestCases />
+                <TestCases 
+                  code={userCode}
+                  language={selectedLanguage}
+                />
                 
                 <div className="mt-4 flex justify-between">
-                  <Button variant="outline" onClick={handleRunTests}>Run Tests</Button>
+                  <Button variant="outline" onClick={handleRunTests}>Run All Tests</Button>
                   <Button onClick={handleSubmit} disabled={isCodeSubmitting}>
                     {isCodeSubmitting ? 'Submitting...' : 'Submit'}
                   </Button>
