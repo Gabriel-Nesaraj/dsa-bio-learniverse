@@ -140,7 +140,7 @@ const ProblemList: React.FC<ProblemListProps> = ({
       const solved = new Set(
         submissions
           .filter((s: any) => s.userId === user.id && s.status === 'accepted')
-          .map((s: any) => s.problemId)
+          .map((s: any) => Number(s.problemId))  // Explicitly convert to number
       );
       setSolvedProblems(solved);
     } else {
