@@ -14,6 +14,8 @@ import DataStructures from "./pages/DataStructures";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 
 // Create a new query client instance
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => {
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/profile" element={<Profile />} />
               
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />

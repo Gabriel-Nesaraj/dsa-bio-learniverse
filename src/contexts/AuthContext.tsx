@@ -5,6 +5,7 @@ type User = {
   id: string;
   name: string;
   email: string;
+  isAdmin?: boolean;
 };
 
 type AuthContextType = {
@@ -13,6 +14,8 @@ type AuthContextType = {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+  isAdmin: boolean;
+  makeUserAdmin: (userId: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,12 +31,15 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in on mount
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      setIsAdmin(!!parsedUser.isAdmin);
     }
     setIsLoading(false);
   }, []);
@@ -51,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (foundUser) {
         const { password, ...userWithoutPassword } = foundUser;
         setUser(userWithoutPassword);
+        setIsAdmin(!!userWithoutPassword.isAdmin);
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
         return true;
       }
@@ -77,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name,
         email,
         password, // In a real app, NEVER store passwords in plain text
+        isAdmin: false, // New users are not admins by default
       };
       
       users.push(newUser);
@@ -84,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { password: _, ...userWithoutPassword } = newUser;
       setUser(userWithoutPassword);
+      setIsAdmin(false);
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
       return true;
@@ -94,11 +103,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setIsAdmin(false);
     localStorage.removeItem('user');
   };
 
+  const makeUserAdmin = async (userId: string): Promise<boolean> => {
+    if (!isAdmin) return false;
+    
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map((u: any) => {
+        if (u.id === userId) {
+          return { ...u, isAdmin: true };
+        }
+        return u;
+      });
+      
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      
+      // If the updated user is the current user, update the current user in state and localStorage
+      if (user && user.id === userId) {
+        const updatedUser = { ...user, isAdmin: true };
+        setUser(updatedUser);
+        setIsAdmin(true);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error making user admin:", error);
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      signup, 
+      logout, 
+      isLoading, 
+      isAdmin,
+      makeUserAdmin 
+    }}>
       {children}
     </AuthContext.Provider>
   );

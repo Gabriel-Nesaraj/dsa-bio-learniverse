@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -13,106 +14,165 @@ interface Problem {
   slug: string;
   difficulty: Difficulty;
   category: string;
-  solved: boolean;
+  bioinformaticsConcepts?: string[];
 }
 
 interface ProblemListProps {
   difficulty?: Difficulty;
   category?: string | null;
+  searchQuery?: string;
+  concepts?: string[];
+  difficulties?: string[];
 }
 
-const ProblemList: React.FC<ProblemListProps> = ({ difficulty, category }) => {
-  // Mock data for problems - in a real app, this would come from an API
-  const problems: Problem[] = [
-    {
-      id: 1,
-      title: "DNA Sequence Alignment",
-      slug: "dna-sequence-alignment",
-      difficulty: "medium",
-      category: "dynamic-programming",
-      solved: true
-    },
-    {
-      id: 2,
-      title: "Protein-Protein Interaction Network",
-      slug: "protein-protein-interaction",
-      difficulty: "hard",
-      category: "graph-algorithms",
-      solved: false
-    },
-    {
-      id: 3,
-      title: "Gene Expression Clustering",
-      slug: "gene-expression-clustering",
-      difficulty: "medium",
-      category: "tree-data-structures",
-      solved: false
-    },
-    {
-      id: 4,
-      title: "DNA Pattern Matching",
-      slug: "dna-pattern-matching",
-      difficulty: "easy",
-      category: "search-algorithms",
-      solved: true
-    },
-    {
-      id: 5,
-      title: "Phylogenetic Tree Construction",
-      slug: "phylogenetic-tree",
-      difficulty: "hard",
-      category: "tree-data-structures",
-      solved: false
-    },
-    {
-      id: 6,
-      title: "Genome Assembly",
-      slug: "genome-assembly",
-      difficulty: "hard",
-      category: "combinatorial-algorithms",
-      solved: false
-    },
-    {
-      id: 7,
-      title: "Motif Finding in DNA",
-      slug: "motif-finding",
-      difficulty: "medium",
-      category: "search-algorithms",
-      solved: false
-    },
-    {
-      id: 8,
-      title: "Gene Function Prediction",
-      slug: "gene-function-prediction",
-      difficulty: "medium",
-      category: "machine-learning",
-      solved: false
-    },
-    {
-      id: 9,
-      title: "Basic DNA Transcription",
-      slug: "basic-dna-transcription",
-      difficulty: "easy",
-      category: "search-algorithms",
-      solved: true
-    },
-    {
-      id: 10,
-      title: "Protein Structure Alignment",
-      slug: "protein-structure-alignment",
-      difficulty: "hard",
-      category: "dynamic-programming",
-      solved: false
+const ProblemList: React.FC<ProblemListProps> = ({ 
+  difficulty, 
+  category, 
+  searchQuery = '',
+  concepts = [],
+  difficulties = []
+}) => {
+  const { user } = useAuth();
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [solvedProblems, setSolvedProblems] = useState<Set<number>>(new Set());
+  
+  useEffect(() => {
+    // Load problems from localStorage, or use mock data if none exists
+    const storedProblems = localStorage.getItem('problems');
+    let problemsList: Problem[] = [];
+    
+    if (storedProblems) {
+      problemsList = JSON.parse(storedProblems);
+    } else {
+      // Mock data for problems - in a real app, this would come from an API
+      problemsList = [
+        {
+          id: 1,
+          title: "DNA Sequence Alignment",
+          slug: "dna-sequence-alignment",
+          difficulty: "medium",
+          category: "dynamic-programming",
+          bioinformaticsConcepts: ["sequence-alignment", "genome-assembly"]
+        },
+        {
+          id: 2,
+          title: "Protein-Protein Interaction Network",
+          slug: "protein-protein-interaction",
+          difficulty: "hard",
+          category: "graph-algorithms",
+          bioinformaticsConcepts: ["protein-structure", "network-analysis"]
+        },
+        {
+          id: 3,
+          title: "Gene Expression Clustering",
+          slug: "gene-expression-clustering",
+          difficulty: "medium",
+          category: "tree-data-structures",
+          bioinformaticsConcepts: ["gene-expression", "phylogenetics"]
+        },
+        {
+          id: 4,
+          title: "DNA Pattern Matching",
+          slug: "dna-pattern-matching",
+          difficulty: "easy",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["sequence-alignment", "motif-finding"]
+        },
+        {
+          id: 5,
+          title: "Phylogenetic Tree Construction",
+          slug: "phylogenetic-tree",
+          difficulty: "hard",
+          category: "tree-data-structures",
+          bioinformaticsConcepts: ["phylogenetics"]
+        },
+        {
+          id: 6,
+          title: "Genome Assembly",
+          slug: "genome-assembly",
+          difficulty: "hard",
+          category: "combinatorial-algorithms",
+          bioinformaticsConcepts: ["genome-assembly", "next-gen-sequencing"]
+        },
+        {
+          id: 7,
+          title: "Motif Finding in DNA",
+          slug: "motif-finding",
+          difficulty: "medium",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["motif-finding"]
+        },
+        {
+          id: 8,
+          title: "Gene Function Prediction",
+          slug: "gene-function-prediction",
+          difficulty: "medium",
+          category: "machine-learning",
+          bioinformaticsConcepts: ["gene-expression"]
+        },
+        {
+          id: 9,
+          title: "Basic DNA Transcription",
+          slug: "basic-dna-transcription",
+          difficulty: "easy",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["sequence-alignment"]
+        },
+        {
+          id: 10,
+          title: "Protein Structure Alignment",
+          slug: "protein-structure-alignment",
+          difficulty: "hard",
+          category: "dynamic-programming",
+          bioinformaticsConcepts: ["protein-structure", "sequence-alignment"]
+        }
+      ];
+      
+      // Save to localStorage for future
+      localStorage.setItem('problems', JSON.stringify(problemsList));
     }
-  ];
-
+    
+    setProblems(problemsList);
+    
+    // Load solved problems for current user
+    if (user) {
+      const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+      const solved = new Set(
+        submissions
+          .filter((s: any) => s.userId === user.id && s.status === 'accepted')
+          .map((s: any) => s.problemId)
+      );
+      setSolvedProblems(solved);
+    } else {
+      setSolvedProblems(new Set());
+    }
+  }, [user]);
+  
   // Filter problems based on props
   const filteredProblems = problems.filter(problem => {
+    // Filter by difficulty if specified
     if (difficulty && problem.difficulty !== difficulty) return false;
+    
+    // Filter by category if specified
     if (category && problem.category !== category) return false;
+    
+    // Filter by search query
+    if (searchQuery && !problem.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    
+    // Filter by bioinformatics concepts
+    if (concepts && concepts.length > 0) {
+      if (!problem.bioinformaticsConcepts) return false;
+      if (!concepts.some(concept => problem.bioinformaticsConcepts?.includes(concept))) return false;
+    }
+    
+    // Filter by difficulties array (when coming from the filter panel)
+    if (difficulties && difficulties.length > 0) {
+      if (!difficulties.includes(problem.difficulty)) return false;
+    }
+    
     return true;
   });
-
+  
   // Helper to get difficulty color
   const getDifficultyColor = (difficulty: Difficulty) => {
     switch (difficulty) {
@@ -122,7 +182,7 @@ const ProblemList: React.FC<ProblemListProps> = ({ difficulty, category }) => {
       default: return '';
     }
   };
-
+  
   return (
     <div className="w-full">
       <div className="grid grid-cols-12 font-medium text-sm text-muted-foreground px-4 py-2 border-b">
@@ -142,7 +202,7 @@ const ProblemList: React.FC<ProblemListProps> = ({ difficulty, category }) => {
             <li key={problem.id} className="border-b last:border-b-0 hover:bg-muted/50 transition-colors">
               <Link to={`/problem/${problem.slug}`} className="grid grid-cols-12 px-4 py-3 items-center">
                 <div className="col-span-1 flex justify-center">
-                  {problem.solved ? (
+                  {solvedProblems.has(problem.id) ? (
                     <CheckCircle2 className="text-green-500 w-5 h-5" />
                   ) : (
                     <Circle className="text-muted-foreground w-5 h-5" />

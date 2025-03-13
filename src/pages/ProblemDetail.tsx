@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -30,31 +31,46 @@ const SUPPORTED_LANGUAGES = [
 
 const ProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('description');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [userCode, setUserCode] = useState('');
   const [isCodeSubmitting, setIsCodeSubmitting] = useState(false);
-  
-  const problem = {
-    id: 1,
-    title: "DNA Sequence Alignment",
-    difficulty: "medium",
-    category: "dynamic-programming",
-    description: "Implement the Needleman-Wunsch algorithm for global alignment of two DNA sequences. This algorithm is used to find the optimal alignment of two sequences that maximizes similarity.",
-    examples: [
-      { 
-        input: "Sequence 1: ACGTACGT, Sequence 2: ACGTCT", 
-        output: "Alignment: ACGTACGT\n         ||||  |\nAlignment: ACGT--CT",
-        explanation: "The optimal alignment introduces gaps (-) to maximize the number of matching characters."
-      }
-    ],
-    constraints: [
-      "The sequences contain only characters A, C, G, and T",
-      "The length of each sequence is between 1 and 1000",
-      "Match score: +1, Mismatch penalty: -1, Gap penalty: -2"
-    ],
-    starterCode: {
-      javascript: `function needlemanWunsch(seq1, seq2) {
+  const [problem, setProblem] = useState<any>(null);
+  const [allProblems, setAllProblems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const storedProblems = localStorage.getItem('problems');
+    if (storedProblems) {
+      const problems = JSON.parse(storedProblems);
+      setAllProblems(problems);
+      
+      const currentProblem = problems.find((p: any) => p.slug === slug);
+      
+      if (currentProblem) {
+        setProblem(currentProblem);
+      } else {
+        setProblem({
+          id: 1,
+          title: "DNA Sequence Alignment",
+          difficulty: "medium",
+          category: "dynamic-programming",
+          description: "Implement the Needleman-Wunsch algorithm for global alignment of two DNA sequences. This algorithm is used to find the optimal alignment of two sequences that maximizes similarity.",
+          examples: [
+            { 
+              input: "Sequence 1: ACGTACGT, Sequence 2: ACGTCT", 
+              output: "Alignment: ACGTACGT\n         ||||  |\nAlignment: ACGT--CT",
+              explanation: "The optimal alignment introduces gaps (-) to maximize the number of matching characters."
+            }
+          ],
+          constraints: [
+            "The sequences contain only characters A, C, G, and T",
+            "The length of each sequence is between 1 and 1000",
+            "Match score: +1, Mismatch penalty: -1, Gap penalty: -2"
+          ],
+          starterCode: {
+            javascript: `function needlemanWunsch(seq1, seq2) {
   // Your implementation here
   // Return the optimal alignment score and the aligned sequences
 }
@@ -62,7 +78,7 @@ const ProblemDetail = () => {
 // Example usage:
 // const result = needlemanWunsch("ACGTACGT", "ACGTCT");
 // console.log(result);`,
-      python: `def needleman_wunsch(seq1, seq2):
+            python: `def needleman_wunsch(seq1, seq2):
     # Your implementation here
     # Return the optimal alignment score and the aligned sequences
     pass
@@ -70,7 +86,7 @@ const ProblemDetail = () => {
 # Example usage:
 # result = needleman_wunsch("ACGTACGT", "ACGTCT")
 # print(result)`,
-      cpp: `#include <string>
+            cpp: `#include <string>
 #include <vector>
 #include <iostream>
 
@@ -82,7 +98,7 @@ std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::s
 // Example usage:
 // auto result = needlemanWunsch("ACGTACGT", "ACGTCT");
 // std::cout << result.first << std::endl;`,
-      java: `class Solution {
+            java: `class Solution {
     public static class AlignmentResult {
         int score;
         String alignedSeq1;
@@ -101,7 +117,7 @@ std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::s
         return null;
     }
 }`,
-      go: `package main
+            go: `package main
 
 import "fmt"
 
@@ -116,7 +132,7 @@ func needlemanWunsch(seq1, seq2 string) AlignmentResult {
 	// Return the optimal alignment score and the aligned sequences
 	return AlignmentResult{}
 }`,
-      ruby: `def needleman_wunsch(seq1, seq2)
+            ruby: `def needleman_wunsch(seq1, seq2)
   # Your implementation here
   # Return the optimal alignment score and the aligned sequences
 end
@@ -124,24 +140,24 @@ end
 # Example usage:
 # result = needleman_wunsch("ACGTACGT", "ACGTCT")
 # puts result`,
-      rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
+            rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
     // Your implementation here
     // Return the optimal alignment score and the aligned sequences
     (0, String::new(), String::new())
 }`,
-      swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
+            swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
     // Your implementation here
     // Return the optimal alignment score and the aligned sequences
     return (0, "", "")
 }`,
-      kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
+            kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
 
 fun needlemanWunsch(seq1: String, seq2: String): AlignmentResult {
     // Your implementation here
     // Return the optimal alignment score and the aligned sequences
     return AlignmentResult(0, "", "")
 }`,
-      csharp: `using System;
+            csharp: `using System;
 
 public class Solution {
     public class AlignmentResult {
@@ -156,7 +172,7 @@ public class Solution {
         return new AlignmentResult();
     }
 }`,
-      typescript: `interface AlignmentResult {
+            typescript: `interface AlignmentResult {
   score: number;
   alignedSeq1: string;
   alignedSeq2: string;
@@ -167,7 +183,7 @@ function needlemanWunsch(seq1: string, seq2: string): AlignmentResult {
   // Return the optimal alignment score and the aligned sequences
   return { score: 0, alignedSeq1: '', alignedSeq2: '' };
 }`,
-      scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
+            scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
 
 object Solution {
   def needlemanWunsch(seq1: String, seq2: String): AlignmentResult = {
@@ -176,16 +192,163 @@ object Solution {
     AlignmentResult(0, "", "")
   }
 }`
-    }
-  };
+          }
+        });
+      }
+    } else {
+      setProblem({
+        id: 1,
+        title: "DNA Sequence Alignment",
+        difficulty: "medium",
+        category: "dynamic-programming",
+        description: "Implement the Needleman-Wunsch algorithm for global alignment of two DNA sequences. This algorithm is used to find the optimal alignment of two sequences that maximizes similarity.",
+        examples: [
+          { 
+            input: "Sequence 1: ACGTACGT, Sequence 2: ACGTCT", 
+            output: "Alignment: ACGTACGT\n         ||||  |\nAlignment: ACGT--CT",
+            explanation: "The optimal alignment introduces gaps (-) to maximize the number of matching characters."
+          }
+        ],
+        constraints: [
+          "The sequences contain only characters A, C, G, and T",
+          "The length of each sequence is between 1 and 1000",
+          "Match score: +1, Mismatch penalty: -1, Gap penalty: -2"
+        ],
+        starterCode: {
+          javascript: `function needlemanWunsch(seq1, seq2) {
+  // Your implementation here
+  // Return the optimal alignment score and the aligned sequences
+}
 
-  React.useEffect(() => {
-    if (problem.starterCode[selectedLanguage]) {
+// Example usage:
+// const result = needlemanWunsch("ACGTACGT", "ACGTCT");
+// console.log(result);`,
+          python: `def needleman_wunsch(seq1, seq2):
+    # Your implementation here
+    # Return the optimal alignment score and the aligned sequences
+    pass
+
+# Example usage:
+# result = needleman_wunsch("ACGTACGT", "ACGTCT")
+# print(result)`,
+          cpp: `#include <string>
+#include <vector>
+#include <iostream>
+
+std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::string& seq1, const std::string& seq2) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+}
+
+// Example usage:
+// auto result = needlemanWunsch("ACGTACGT", "ACGTCT");
+// std::cout << result.first << std::endl;`,
+          java: `class Solution {
+    public static class AlignmentResult {
+        int score;
+        String alignedSeq1;
+        String alignedSeq2;
+        
+        public AlignmentResult(int score, String alignedSeq1, String alignedSeq2) {
+            this.score = score;
+            this.alignedSeq1 = alignedSeq1;
+            this.alignedSeq2 = alignedSeq2;
+        }
+    }
+    
+    public AlignmentResult needlemanWunsch(String seq1, String seq2) {
+        // Your implementation here
+        // Return the optimal alignment score and the aligned sequences
+        return null;
+    }
+}`,
+          go: `package main
+
+import "fmt"
+
+type AlignmentResult struct {
+	Score       int
+	AlignedSeq1 string
+	AlignedSeq2 string
+}
+
+func needlemanWunsch(seq1, seq2 string) AlignmentResult {
+	// Your implementation here
+	// Return the optimal alignment score and the aligned sequences
+	return AlignmentResult{}
+}`,
+          ruby: `def needleman_wunsch(seq1, seq2)
+  # Your implementation here
+  # Return the optimal alignment score and the aligned sequences
+end
+
+# Example usage:
+# result = needleman_wunsch("ACGTACGT", "ACGTCT")
+# puts result`,
+          rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    (0, String::new(), String::new())
+}`,
+          swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    return (0, "", "")
+}`,
+          kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
+
+fun needlemanWunsch(seq1: String, seq2: String): AlignmentResult {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    return AlignmentResult(0, "", "")
+}`,
+          csharp: `using System;
+
+public class Solution {
+    public class AlignmentResult {
+        public int Score { get; set; }
+        public string AlignedSeq1 { get; set; }
+        public string AlignedSeq2 { get; set; }
+    }
+    
+    public AlignmentResult NeedlemanWunsch(string seq1, string seq2) {
+        // Your implementation here
+        // Return the optimal alignment score and the aligned sequences
+        return new AlignmentResult();
+    }
+}`,
+          typescript: `interface AlignmentResult {
+  score: number;
+  alignedSeq1: string;
+  alignedSeq2: string;
+}
+
+function needlemanWunsch(seq1: string, seq2: string): AlignmentResult {
+  // Your implementation here
+  // Return the optimal alignment score and the aligned sequences
+  return { score: 0, alignedSeq1: '', alignedSeq2: '' };
+}`,
+          scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
+
+object Solution {
+  def needlemanWunsch(seq1: String, seq2: String): AlignmentResult = {
+    // Your implementation here
+    // Return the optimal alignment score and the aligned sequences
+    AlignmentResult(0, "", "")
+  }
+}`
+        }
+      });
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    if (problem?.starterCode?.[selectedLanguage]) {
       setUserCode(problem.starterCode[selectedLanguage]);
     } else {
       setUserCode(`// No starter code available for ${selectedLanguage}`);
     }
-  }, [selectedLanguage]);
+  }, [selectedLanguage, problem]);
 
   const handleCodeChange = (newCode: string) => {
     setUserCode(newCode);
@@ -199,12 +362,39 @@ object Solution {
   };
 
   const handleSubmit = () => {
+    if (!user) {
+      toast.error("Please log in to submit your solution");
+      navigate('/login');
+      return;
+    }
+
     setIsCodeSubmitting(true);
     toast.info("Submitting solution...");
     
     setTimeout(() => {
+      const isCorrect = Math.random() > 0.3;
+      
+      const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+      const newSubmission = {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        problemId: problem.id,
+        code: userCode,
+        language: selectedLanguage,
+        status: isCorrect ? 'accepted' : 'wrong_answer',
+        timestamp: Date.now()
+      };
+      
+      submissions.push(newSubmission);
+      localStorage.setItem('submissions', JSON.stringify(submissions));
+      
       setIsCodeSubmitting(false);
-      toast.success("Solution submitted successfully!");
+      
+      if (isCorrect) {
+        toast.success("Solution accepted! All test cases passed.");
+      } else {
+        toast.error("Solution failed. Some test cases didn't pass.");
+      }
     }, 2000);
   };
 
