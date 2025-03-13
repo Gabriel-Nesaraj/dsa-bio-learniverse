@@ -36,28 +36,23 @@ const Profile = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   
   useEffect(() => {
-    // Redirect if not logged in
     if (!user && !isLoading) {
       navigate('/login');
     }
     
-    // Load submissions from localStorage
     const storedSubmissions = localStorage.getItem('submissions');
     if (storedSubmissions) {
       const allSubmissions = JSON.parse(storedSubmissions);
-      // Filter submissions for the current user
       const userSubmissions = user ? allSubmissions.filter((s: Submission) => s.userId === user.id) : [];
       setSubmissions(userSubmissions);
     }
     
-    // Load problems from localStorage
     const storedProblems = localStorage.getItem('problems');
     if (storedProblems) {
       setProblems(JSON.parse(storedProblems));
     }
   }, [user, isLoading, navigate]);
   
-  // Calculate solved problems
   const solvedProblems = submissions
     .filter(s => s.status === 'accepted')
     .reduce((acc: Set<number>, submission) => {
@@ -65,7 +60,6 @@ const Profile = () => {
       return acc;
     }, new Set<number>());
   
-  // Calculate progress statistics
   const totalProblems = problems.length;
   const solvedCount = solvedProblems.size;
   const solvedEasy = problems.filter(p => p.difficulty === 'easy' && solvedProblems.has(p.id)).length;
@@ -76,7 +70,6 @@ const Profile = () => {
   const totalMedium = problems.filter(p => p.difficulty === 'medium').length;
   const totalHard = problems.filter(p => p.difficulty === 'hard').length;
   
-  // Bar chart data
   const chartData = [
     {
       name: 'Easy',
@@ -95,7 +88,6 @@ const Profile = () => {
     },
   ];
   
-  // Get most active day (day with most submissions)
   const submissionsByDay = submissions.reduce((acc: Record<string, number>, submission) => {
     const date = new Date(submission.timestamp).toLocaleDateString();
     acc[date] = (acc[date] || 0) + 1;
@@ -215,11 +207,12 @@ const Profile = () => {
                 <div className="h-80">
                   <BarChart
                     data={chartData}
-                    index="name"
-                    categories={["solved", "total"]}
-                    colors={["#10b981", "#e2e8f0"]}
-                    valueFormatter={(value) => `${value} problems`}
-                    yAxisWidth={48}
+                    xKey="name"
+                    yKey="solved"
+                    colors={["#10b981"]}
+                    height={300}
+                    showGrid={true}
+                    showTooltip={true}
                   />
                 </div>
               </CardContent>
@@ -355,3 +348,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
