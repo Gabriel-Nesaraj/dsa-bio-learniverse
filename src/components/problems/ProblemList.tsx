@@ -137,14 +137,16 @@ const ProblemList: React.FC<ProblemListProps> = ({
     // Load solved problems for current user
     if (user) {
       const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
-      const solved = new Set(
+      // Create a Set of problem IDs that the user has solved
+      // Make sure each problem ID is explicitly converted to a number
+      const solved = new Set<number>(
         submissions
           .filter((s: any) => s.userId === user.id && s.status === 'accepted')
-          .map((s: any) => Number(s.problemId))  // Explicitly convert to number
+          .map((s: any) => Number(s.problemId))
       );
       setSolvedProblems(solved);
     } else {
-      setSolvedProblems(new Set());
+      setSolvedProblems(new Set<number>());
     }
   }, [user]);
   
