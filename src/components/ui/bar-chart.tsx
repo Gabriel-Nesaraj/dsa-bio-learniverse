@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React from "react";
 import {
   BarChart as RechartsBarChart,
   Bar,
@@ -8,66 +8,54 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-} from 'recharts';
+  TooltipProps,
+} from "recharts";
+import { cn } from "@/lib/utils";
 
-interface BarChartProps {
+export interface BarChartProps {
   data: any[];
-  index: string;
-  categories: string[];
-  colors: string[];
-  yAxisWidth?: number;
-  valueFormatter?: (value: number) => string;
+  xKey: string;
+  yKey: string;
+  className?: string;
+  colors?: string[];
+  height?: number;
+  showGrid?: boolean;
+  showTooltip?: boolean;
+  showXAxis?: boolean;
+  showYAxis?: boolean;
 }
 
 export const BarChart = ({
   data,
-  index,
-  categories,
-  colors,
-  yAxisWidth = 40,
-  valueFormatter = (value: number) => `${value}`,
+  xKey,
+  yKey,
+  className,
+  colors = ["var(--primary)"],
+  height = 300,
+  showGrid = true,
+  showTooltip = true,
+  showXAxis = true,
+  showYAxis = true,
 }: BarChartProps) => {
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <RechartsBarChart
-        data={data}
-        margin={{
-          top: 10,
-          right: 10,
-          left: 10,
-          bottom: 20,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis
-          dataKey={index}
-          tick={{ fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          width={yAxisWidth}
-          tick={{ fontSize: 12 }}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={valueFormatter}
-        />
-        <Tooltip
-          formatter={(value: number) => [valueFormatter(value), ""]}
-          labelStyle={{ fontWeight: "bold", fontSize: 14 }}
-        />
-        <Legend wrapperStyle={{ paddingTop: 10 }} />
-        {categories.map((category, i) => (
-          <Bar
-            key={category}
-            dataKey={category}
-            fill={colors[i % colors.length]}
-            radius={[4, 4, 0, 0]}
-            barSize={30}
-          />
-        ))}
-      </RechartsBarChart>
-    </ResponsiveContainer>
+    <div className={cn("w-full", className)}>
+      <ResponsiveContainer width="100%" height={height}>
+        <RechartsBarChart
+          data={data}
+          margin={{
+            top: 10,
+            right: 10,
+            left: 10,
+            bottom: 10,
+          }}
+        >
+          {showGrid && <CartesianGrid strokeDasharray="3 3" vertical={false} />}
+          {showXAxis && <XAxis dataKey={xKey} />}
+          {showYAxis && <YAxis />}
+          {showTooltip && <Tooltip />}
+          <Bar dataKey={yKey} fill={colors[0]} radius={[4, 4, 0, 0]} />
+        </RechartsBarChart>
+      </ResponsiveContainer>
+    </div>
   );
 };

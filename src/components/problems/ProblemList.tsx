@@ -138,7 +138,6 @@ const ProblemList: React.FC<ProblemListProps> = ({
     if (user) {
       const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
       // Create a Set of problem IDs that the user has solved
-      // Make sure each problem ID is explicitly converted to a number
       const solved = new Set<number>(
         submissions
           .filter((s: any) => s.userId === user.id && s.status === 'accepted')
