@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -29,6 +30,81 @@ const SUPPORTED_LANGUAGES = [
   { id: 'typescript', name: 'TypeScript' },
 ];
 
+// Default problem data to use when none is available
+const DEFAULT_PROBLEM = {
+  id: 1,
+  title: "DNA Pattern Matching",
+  difficulty: "medium",
+  category: "dynamic-programming",
+  slug: "dna-pattern-matching",
+  description: "Implement an algorithm to find occurrences of a pattern in a DNA sequence. This is a fundamental operation in bioinformatics.",
+  examples: [
+    { 
+      input: "Sequence: ACGTACGT, Pattern: ACG", 
+      output: "Matches found at positions: 0, 4",
+      explanation: "The pattern 'ACG' appears at the beginning of the sequence and again at position 4."
+    }
+  ],
+  constraints: [
+    "The sequences contain only characters A, C, G, and T",
+    "The length of the sequence is between 1 and 10,000",
+    "The length of the pattern is between 1 and 100"
+  ],
+  starterCode: {
+    javascript: `function findPattern(sequence, pattern) {
+  // Your implementation here
+  // Return an array of starting positions where the pattern occurs
+}
+
+// Example usage:
+// const result = findPattern("ACGTACGT", "ACG");
+// console.log(result); // Should output [0, 4]`,
+    python: `def find_pattern(sequence, pattern):
+    # Your implementation here
+    # Return a list of starting positions where the pattern occurs
+    pass
+
+# Example usage:
+# result = find_pattern("ACGTACGT", "ACG")
+# print(result)  # Should output [0, 4]`,
+    cpp: `#include <string>
+#include <vector>
+
+std::vector<int> findPattern(const std::string& sequence, const std::string& pattern) {
+    // Your implementation here
+    // Return a vector of starting positions where the pattern occurs
+    return {};
+}
+
+// Example usage:
+// auto result = findPattern("ACGTACGT", "ACG");
+// Should output [0, 4]`,
+    java: `import java.util.ArrayList;
+import java.util.List;
+
+class Solution {
+    public List<Integer> findPattern(String sequence, String pattern) {
+        // Your implementation here
+        // Return a list of starting positions where the pattern occurs
+        return new ArrayList<>();
+    }
+}
+
+// Example usage:
+// List<Integer> result = new Solution().findPattern("ACGTACGT", "ACG");
+// Should output [0, 4]`,
+    typescript: `function findPattern(sequence: string, pattern: string): number[] {
+  // Your implementation here
+  // Return an array of starting positions where the pattern occurs
+  return [];
+}
+
+// Example usage:
+// const result = findPattern("ACGTACGT", "ACG");
+// console.log(result); // Should output [0, 4]`,
+  }
+};
+
 const ProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
@@ -38,314 +114,56 @@ const ProblemDetail = () => {
   const [userCode, setUserCode] = useState('');
   const [isCodeSubmitting, setIsCodeSubmitting] = useState(false);
   const [problem, setProblem] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [allProblems, setAllProblems] = useState<any[]>([]);
 
   useEffect(() => {
-    const storedProblems = localStorage.getItem('problems');
-    if (storedProblems) {
-      const problems = JSON.parse(storedProblems);
-      setAllProblems(problems);
-      
-      const currentProblem = problems.find((p: any) => p.slug === slug);
-      
-      if (currentProblem) {
-        setProblem(currentProblem);
-      } else {
+    const loadProblem = () => {
+      setIsLoading(true);
+      try {
+        const storedProblems = localStorage.getItem('problems');
+        if (storedProblems) {
+          const problems = JSON.parse(storedProblems);
+          setAllProblems(problems);
+          
+          const currentProblem = problems.find((p: any) => p.slug === slug);
+          
+          if (currentProblem) {
+            setProblem(currentProblem);
+          } else {
+            // If no problem found with that slug, set the default problem
+            setProblem({
+              ...DEFAULT_PROBLEM,
+              slug: slug
+            });
+          }
+        } else {
+          // If no problems in localStorage, set the default problem
+          setProblem({
+            ...DEFAULT_PROBLEM,
+            slug: slug
+          });
+        }
+      } catch (error) {
+        console.error('Error loading problem:', error);
+        // Fallback to default problem data
         setProblem({
-          id: 1,
-          title: "DNA Sequence Alignment",
-          difficulty: "medium",
-          category: "dynamic-programming",
-          description: "Implement the Needleman-Wunsch algorithm for global alignment of two DNA sequences. This algorithm is used to find the optimal alignment of two sequences that maximizes similarity.",
-          examples: [
-            { 
-              input: "Sequence 1: ACGTACGT, Sequence 2: ACGTCT", 
-              output: "Alignment: ACGTACGT\n         ||||  |\nAlignment: ACGT--CT",
-              explanation: "The optimal alignment introduces gaps (-) to maximize the number of matching characters."
-            }
-          ],
-          constraints: [
-            "The sequences contain only characters A, C, G, and T",
-            "The length of each sequence is between 1 and 1000",
-            "Match score: +1, Mismatch penalty: -1, Gap penalty: -2"
-          ],
-          starterCode: {
-            javascript: `function needlemanWunsch(seq1, seq2) {
-  // Your implementation here
-  // Return the optimal alignment score and the aligned sequences
-}
-
-// Example usage:
-// const result = needlemanWunsch("ACGTACGT", "ACGTCT");
-// console.log(result);`,
-            python: `def needleman_wunsch(seq1, seq2):
-    # Your implementation here
-    # Return the optimal alignment score and the aligned sequences
-    pass
-
-# Example usage:
-# result = needleman_wunsch("ACGTACGT", "ACGTCT")
-# print(result)`,
-            cpp: `#include <string>
-#include <vector>
-#include <iostream>
-
-std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::string& seq1, const std::string& seq2) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-}
-
-// Example usage:
-// auto result = needlemanWunsch("ACGTACGT", "ACGTCT");
-// std::cout << result.first << std::endl;`,
-            java: `class Solution {
-    public static class AlignmentResult {
-        int score;
-        String alignedSeq1;
-        String alignedSeq2;
-        
-        public AlignmentResult(int score, String alignedSeq1, String alignedSeq2) {
-            this.score = score;
-            this.alignedSeq1 = alignedSeq1;
-            this.alignedSeq2 = alignedSeq2;
-        }
-    }
-    
-    public AlignmentResult needlemanWunsch(String seq1, String seq2) {
-        // Your implementation here
-        // Return the optimal alignment score and the aligned sequences
-        return null;
-    }
-}`,
-            go: `package main
-
-import "fmt"
-
-type AlignmentResult struct {
-	Score       int
-	AlignedSeq1 string
-	AlignedSeq2 string
-}
-
-func needlemanWunsch(seq1, seq2 string) AlignmentResult {
-	// Your implementation here
-	// Return the optimal alignment score and the aligned sequences
-	return AlignmentResult{}
-}`,
-            ruby: `def needleman_wunsch(seq1, seq2)
-  # Your implementation here
-  # Return the optimal alignment score and the aligned sequences
-end
-
-# Example usage:
-# result = needleman_wunsch("ACGTACGT", "ACGTCT")
-# puts result`,
-            rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    (0, String::new(), String::new())
-}`,
-            swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    return (0, "", "")
-}`,
-            kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
-
-fun needlemanWunsch(seq1: String, seq2: String): AlignmentResult {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    return AlignmentResult(0, "", "")
-}`,
-            csharp: `using System;
-
-public class Solution {
-    public class AlignmentResult {
-        public int Score { get; set; }
-        public string AlignedSeq1 { get; set; }
-        public string AlignedSeq2 { get; set; }
-    }
-    
-    public AlignmentResult NeedlemanWunsch(string seq1, string seq2) {
-        // Your implementation here
-        // Return the optimal alignment score and the aligned sequences
-        return new AlignmentResult();
-    }
-}`,
-            typescript: `interface AlignmentResult {
-  score: number;
-  alignedSeq1: string;
-  alignedSeq2: string;
-}
-
-function needlemanWunsch(seq1: string, seq2: string): AlignmentResult {
-  // Your implementation here
-  // Return the optimal alignment score and the aligned sequences
-  return { score: 0, alignedSeq1: '', alignedSeq2: '' };
-}`,
-            scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
-
-object Solution {
-  def needlemanWunsch(seq1: String, seq2: String): AlignmentResult = {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    AlignmentResult(0, "", "")
-  }
-}`
-          }
+          ...DEFAULT_PROBLEM,
+          slug: slug
         });
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      setProblem({
-        id: 1,
-        title: "DNA Sequence Alignment",
-        difficulty: "medium",
-        category: "dynamic-programming",
-        description: "Implement the Needleman-Wunsch algorithm for global alignment of two DNA sequences. This algorithm is used to find the optimal alignment of two sequences that maximizes similarity.",
-        examples: [
-          { 
-            input: "Sequence 1: ACGTACGT, Sequence 2: ACGTCT", 
-            output: "Alignment: ACGTACGT\n         ||||  |\nAlignment: ACGT--CT",
-            explanation: "The optimal alignment introduces gaps (-) to maximize the number of matching characters."
-          }
-        ],
-        constraints: [
-          "The sequences contain only characters A, C, G, and T",
-          "The length of each sequence is between 1 and 1000",
-          "Match score: +1, Mismatch penalty: -1, Gap penalty: -2"
-        ],
-        starterCode: {
-          javascript: `function needlemanWunsch(seq1, seq2) {
-  // Your implementation here
-  // Return the optimal alignment score and the aligned sequences
-}
+    };
 
-// Example usage:
-// const result = needlemanWunsch("ACGTACGT", "ACGTCT");
-// console.log(result);`,
-          python: `def needleman_wunsch(seq1, seq2):
-    # Your implementation here
-    # Return the optimal alignment score and the aligned sequences
-    pass
-
-# Example usage:
-# result = needleman_wunsch("ACGTACGT", "ACGTCT")
-# print(result)`,
-          cpp: `#include <string>
-#include <vector>
-#include <iostream>
-
-std::pair<int, std::pair<std::string, std::string>> needlemanWunsch(const std::string& seq1, const std::string& seq2) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-}
-
-// Example usage:
-// auto result = needlemanWunsch("ACGTACGT", "ACGTCT");
-// std::cout << result.first << std::endl;`,
-          java: `class Solution {
-    public static class AlignmentResult {
-        int score;
-        String alignedSeq1;
-        String alignedSeq2;
-        
-        public AlignmentResult(int score, String alignedSeq1, String alignedSeq2) {
-            this.score = score;
-            this.alignedSeq1 = alignedSeq1;
-            this.alignedSeq2 = alignedSeq2;
-        }
-    }
-    
-    public AlignmentResult needlemanWunsch(String seq1, String seq2) {
-        // Your implementation here
-        // Return the optimal alignment score and the aligned sequences
-        return null;
-    }
-}`,
-          go: `package main
-
-import "fmt"
-
-type AlignmentResult struct {
-	Score       int
-	AlignedSeq1 string
-	AlignedSeq2 string
-}
-
-func needlemanWunsch(seq1, seq2 string) AlignmentResult {
-	// Your implementation here
-	// Return the optimal alignment score and the aligned sequences
-	return AlignmentResult{}
-}`,
-          ruby: `def needleman_wunsch(seq1, seq2)
-  # Your implementation here
-  # Return the optimal alignment score and the aligned sequences
-end
-
-# Example usage:
-# result = needleman_wunsch("ACGTACGT", "ACGTCT")
-# puts result`,
-          rust: `fn needleman_wunsch(seq1: &str, seq2: &str) -> (i32, String, String) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    (0, String::new(), String::new())
-}`,
-          swift: `func needlemanWunsch(seq1: String, seq2: String) -> (score: Int, alignedSeq1: String, alignedSeq2: String) {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    return (0, "", "")
-}`,
-          kotlin: `data class AlignmentResult(val score: Int, val alignedSeq1: String, val alignedSeq2: String)
-
-fun needlemanWunsch(seq1: String, seq2: String): AlignmentResult {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    return AlignmentResult(0, "", "")
-}`,
-          csharp: `using System;
-
-public class Solution {
-    public class AlignmentResult {
-        public int Score { get; set; }
-        public string AlignedSeq1 { get; set; }
-        public string AlignedSeq2 { get; set; }
-    }
-    
-    public AlignmentResult NeedlemanWunsch(string seq1, string seq2) {
-        // Your implementation here
-        // Return the optimal alignment score and the aligned sequences
-        return new AlignmentResult();
-    }
-}`,
-          typescript: `interface AlignmentResult {
-  score: number;
-  alignedSeq1: string;
-  alignedSeq2: string;
-}
-
-function needlemanWunsch(seq1: string, seq2: string): AlignmentResult {
-  // Your implementation here
-  // Return the optimal alignment score and the aligned sequences
-  return { score: 0, alignedSeq1: '', alignedSeq2: '' };
-}`,
-          scala: `case class AlignmentResult(score: Int, alignedSeq1: String, alignedSeq2: String)
-
-object Solution {
-  def needlemanWunsch(seq1: String, seq2: String): AlignmentResult = {
-    // Your implementation here
-    // Return the optimal alignment score and the aligned sequences
-    AlignmentResult(0, "", "")
-  }
-}`
-        }
-      });
-    }
+    loadProblem();
   }, [slug]);
 
   useEffect(() => {
-    if (problem?.starterCode?.[selectedLanguage]) {
+    if (problem?.starterCode && problem.starterCode[selectedLanguage]) {
       setUserCode(problem.starterCode[selectedLanguage]);
-    } else {
+    } else if (problem) {
+      // Fallback if the specific language starter code is missing
       setUserCode(`// No starter code available for ${selectedLanguage}`);
     }
   }, [selectedLanguage, problem]);
@@ -398,6 +216,21 @@ object Solution {
     }, 2000);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-12 mt-16">
+          <div className="text-center">
+            <div className="animate-spin h-12 w-12 mx-auto border-4 border-primary border-t-transparent rounded-full"></div>
+            <p className="mt-4 text-muted-foreground">Loading problem...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!problem) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -418,6 +251,10 @@ object Solution {
       </div>
     );
   }
+
+  // Provide defaults for any missing data in the problem
+  const examples = problem.examples || [];
+  const constraints = problem.constraints || [];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -446,7 +283,7 @@ object Solution {
             </span>
             <Separator orientation="vertical" className="h-4" />
             <span className="text-muted-foreground">
-              {problem.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              {problem.category ? problem.category.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Uncategorized'}
             </span>
           </div>
         </div>
@@ -483,17 +320,17 @@ object Solution {
                 <div className="space-y-4">
                   <h3 className="font-medium">Hint 1</h3>
                   <p className="text-muted-foreground">
-                    Consider using a 2D matrix to store the alignment scores.
+                    Consider using a sliding window approach to compare substrings.
                   </p>
                   
                   <h3 className="font-medium">Hint 2</h3>
                   <p className="text-muted-foreground">
-                    Remember to initialize the first row and column with gap penalties.
+                    For more efficient pattern matching, look into algorithms like KMP (Knuth-Morris-Pratt) or Boyer-Moore.
                   </p>
                   
                   <h3 className="font-medium">Hint 3</h3>
                   <p className="text-muted-foreground">
-                    For each cell (i,j), consider three possibilities: match/mismatch, gap in sequence 1, or gap in sequence 2.
+                    Remember to handle edge cases, such as when the pattern is longer than the sequence.
                   </p>
                 </div>
               </TabsContent>
@@ -525,7 +362,13 @@ object Solution {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={() => setUserCode(problem.starterCode[selectedLanguage] || '')}>
+                <Button variant="outline" size="sm" onClick={() => {
+                  if (problem?.starterCode?.[selectedLanguage]) {
+                    setUserCode(problem.starterCode[selectedLanguage]);
+                  } else {
+                    setUserCode(`// No starter code available for ${selectedLanguage}`);
+                  }
+                }}>
                   Reset Code
                 </Button>
               </div>
