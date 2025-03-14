@@ -26,13 +26,13 @@ interface ProblemDescriptionProps {
 
 const ProblemDescription: React.FC<ProblemDescriptionProps> = ({ problem }) => {
   // Ensure we have arrays to map over, even if they're empty
-  const examples = problem.examples || [];
-  const constraints = problem.constraints || [];
+  const examples = problem?.examples || [];
+  const constraints = problem?.constraints || [];
   
   return (
     <div className="space-y-6">
       <div>
-        <p className="whitespace-pre-line">{problem.description || 'No description available.'}</p>
+        <p className="whitespace-pre-line">{problem?.description || 'No description available for this problem. Please check back later or contact an administrator.'}</p>
       </div>
       
       {examples.length > 0 && (

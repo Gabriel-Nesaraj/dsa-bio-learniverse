@@ -52,7 +52,7 @@ const About = () => {
             </Card>
           </div>
           
-          <div className="bg-muted p-8 rounded-lg mb-12">
+          <div className="bg-muted p-8 rounded-lg">
             <h2 className="text-2xl font-bold mb-6 text-center">Why Learn DSA Through Bioinformatics?</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
@@ -86,17 +86,6 @@ const About = () => {
                 </p>
               </div>
             </div>
-          </div>
-          
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Our Team</h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              BioDSA was created by a team of bioinformaticians, computer scientists, and educators 
-              passionate about making computational biology accessible to all.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Want to contribute? <a href="#" className="text-primary hover:underline">Join our open-source community</a>
-            </p>
           </div>
         </AnimatedContainer>
       </main>

@@ -69,10 +69,10 @@ const Navbar = () => {
           
           {user ? (
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+              <Link to="/profile" className="flex items-center space-x-2 hover:text-primary transition-colors">
                 <User className="w-4 h-4 text-primary" />
                 <span className="text-sm">{user.name}</span>
-              </div>
+              </Link>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -135,10 +135,14 @@ const Navbar = () => {
           
           {user ? (
             <>
-              <div className="flex items-center py-2">
+              <Link 
+                to="/profile"
+                className="flex items-center py-2 hover:text-primary transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 <User className="w-4 h-4 text-primary mr-2" />
                 <span>{user.name}</span>
-              </div>
+              </Link>
               <Button 
                 variant="ghost" 
                 className="justify-start"
