@@ -1,17 +1,18 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dna, Menu, X, LogIn, LogOut, User } from 'lucide-react';
+import { Dna, Menu, X, LogIn, LogOut, User, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,6 +41,11 @@ const Navbar = () => {
     { name: 'About', path: '/about' },
   ];
 
+  // Add admin link if user is admin
+  if (user && isAdmin) {
+    navItems.push({ name: 'Admin', path: '/admin' });
+  }
+
   return (
     <nav
       className={cn(
@@ -61,7 +67,10 @@ const Navbar = () => {
             <Link 
               key={item.name}
               to={item.path}
-              className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full"
+              className={cn(
+                "text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-primary after:transition-all hover:after:w-full",
+                location.pathname === item.path && "text-primary after:w-full"
+              )}
             >
               {item.name}
             </Link>
@@ -126,7 +135,10 @@ const Navbar = () => {
             <Link 
               key={item.name}
               to={item.path}
-              className="text-foreground/80 py-2 hover:text-primary transition-colors"
+              className={cn(
+                "text-foreground/80 py-2 hover:text-primary transition-colors",
+                location.pathname === item.path && "text-primary"
+              )}
               onClick={() => setIsMobileMenuOpen(false)}
             >
               {item.name}

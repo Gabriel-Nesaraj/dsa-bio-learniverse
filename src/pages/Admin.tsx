@@ -11,9 +11,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
-import { PlusCircle, UserCog, FileText, ListChecks, Filter } from 'lucide-react';
+import { PlusCircle, UserCog, FileText, ListChecks, Shield } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
 // Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -50,22 +62,32 @@ type Submission = {
   timestamp: number;
 };
 
+// Schema for problem form validation
+const problemSchema = z.object({
+  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  category: z.string(),
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  exampleInput: z.string(),
+  exampleOutput: z.string(),
+  exampleExplanation: z.string().optional(),
+  constraints: z.string(),
+  starterCodeJs: z.string()
+});
+
+// Schema for admin creation form
+const adminCreationSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email." }),
+  adminKey: z.string().min(1, { message: "Admin key is required." })
+});
+
 const Admin = () => {
-  const { user, isAdmin, makeUserAdmin } = useAuth();
+  const { user, isAdmin, makeUserAdmin, isLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('problems');
   
   // For problem management
   const [problems, setProblems] = useState<Problem[]>([]);
-  const [newProblem, setNewProblem] = useState<Partial<Problem>>({
-    title: '',
-    difficulty: 'medium',
-    category: 'dynamic-programming',
-    description: '',
-    examples: [{ input: '', output: '', explanation: '' }],
-    constraints: [''],
-    starterCode: { javascript: '' }
-  });
   
   // For user management
   const [users, setUsers] = useState<User[]>([]);
@@ -73,6 +95,34 @@ const Admin = () => {
   
   // For submissions
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  
+  // For admin key (in real app, this would be environment variable)
+  const adminKey = "bioadmin123"; // Example only - in production use a secure value
+  
+  // Problem form
+  const problemForm = useForm<z.infer<typeof problemSchema>>({
+    resolver: zodResolver(problemSchema),
+    defaultValues: {
+      title: "",
+      difficulty: "medium",
+      category: "dynamic-programming",
+      description: "",
+      exampleInput: "",
+      exampleOutput: "",
+      exampleExplanation: "",
+      constraints: "",
+      starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
+    },
+  });
+
+  // Admin creation form
+  const adminForm = useForm<z.infer<typeof adminCreationSchema>>({
+    resolver: zodResolver(adminCreationSchema),
+    defaultValues: {
+      email: "",
+      adminKey: ""
+    },
+  });
   
   useEffect(() => {
     // Redirect if not admin
@@ -102,25 +152,35 @@ const Admin = () => {
     if (storedSubmissions) {
       setSubmissions(JSON.parse(storedSubmissions));
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, isLoading, navigate]);
   
-  const handleAddProblem = () => {
+  const handleAddProblem = (data: z.infer<typeof problemSchema>) => {
     // Generate slug from title
-    const slug = newProblem.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || '';
+    const slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
     
     // Generate ID (normally this would be handled by a backend)
     const id = problems.length > 0 ? Math.max(...problems.map(p => p.id)) + 1 : 1;
     
+    // Parse constraints into array
+    const constraintsArray = data.constraints
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+    
     const problem: Problem = {
       id,
-      title: newProblem.title || '',
+      title: data.title,
       slug,
-      difficulty: newProblem.difficulty as Difficulty || 'medium',
-      category: newProblem.category || '',
-      description: newProblem.description || '',
-      examples: newProblem.examples || [],
-      constraints: newProblem.constraints || [],
-      starterCode: newProblem.starterCode || { javascript: '' }
+      difficulty: data.difficulty as Difficulty,
+      category: data.category,
+      description: data.description,
+      examples: [{
+        input: data.exampleInput,
+        output: data.exampleOutput,
+        explanation: data.exampleExplanation
+      }],
+      constraints: constraintsArray,
+      starterCode: { javascript: data.starterCodeJs }
     };
     
     const updatedProblems = [...problems, problem];
@@ -128,15 +188,7 @@ const Admin = () => {
     localStorage.setItem('problems', JSON.stringify(updatedProblems));
     
     // Reset form
-    setNewProblem({
-      title: '',
-      difficulty: 'medium',
-      category: 'dynamic-programming',
-      description: '',
-      examples: [{ input: '', output: '', explanation: '' }],
-      constraints: [''],
-      starterCode: { javascript: '' }
-    });
+    problemForm.reset();
     
     toast.success("Problem added successfully!");
   };
@@ -165,7 +217,41 @@ const Admin = () => {
     }
   };
   
-  const { isLoading } = useAuth();
+  const handleMakeAdminWithKey = async (data: z.infer<typeof adminCreationSchema>) => {
+    if (data.adminKey !== adminKey) {
+      toast.error("Invalid admin key");
+      return;
+    }
+    
+    // Find user by email
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find((u: any) => u.email === data.email);
+    
+    if (!user) {
+      toast.error("User not found");
+      return;
+    }
+    
+    // Update user to admin in localStorage
+    const updatedUsers = users.map((u: any) => {
+      if (u.email === data.email) {
+        return { ...u, isAdmin: true };
+      }
+      return u;
+    });
+    
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    
+    // Refresh users list
+    const parsedUsers = updatedUsers.map((u: any) => {
+      const { password, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    setUsers(parsedUsers);
+    
+    toast.success(`${data.email} is now an admin`);
+    adminForm.reset();
+  };
   
   if (isLoading) {
     return <div>Loading...</div>;
@@ -181,7 +267,10 @@ const Admin = () => {
       
       <main className="flex-grow container mx-auto px-4 py-8 mt-16">
         <AnimatedContainer>
-          <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-6 w-6 text-primary" />
+            <h1 className="text-3xl font-bold">Admin Panel</h1>
+          </div>
           <p className="text-muted-foreground mb-8">
             Manage problems, users, and view submissions
           </p>
@@ -212,127 +301,202 @@ const Admin = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-1 block">Title</label>
-                        <Input 
-                          placeholder="Problem title" 
-                          value={newProblem.title}
-                          onChange={(e) => setNewProblem({...newProblem, title: e.target.value})}
+                  <Form {...problemForm}>
+                    <form onSubmit={problemForm.handleSubmit(handleAddProblem)} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={problemForm.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Problem title" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={problemForm.control}
+                            name="difficulty"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Difficulty</FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select difficulty" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="easy">Easy</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="hard">Hard</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={problemForm.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Category</FormLabel>
+                                <Select 
+                                  onValueChange={field.onChange} 
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="graph-algorithms">Graph Algorithms</SelectItem>
+                                    <SelectItem value="tree-data-structures">Tree Data Structures</SelectItem>
+                                    <SelectItem value="search-algorithms">Search Algorithms</SelectItem>
+                                    <SelectItem value="dynamic-programming">Dynamic Programming</SelectItem>
+                                    <SelectItem value="machine-learning">Machine Learning</SelectItem>
+                                    <SelectItem value="combinatorial-algorithms">Combinatorial Algorithms</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-1 block">Difficulty</label>
-                          <Select 
-                            value={newProblem.difficulty}
-                            onValueChange={(value) => setNewProblem({...newProblem, difficulty: value as Difficulty})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="easy">Easy</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <label className="text-sm font-medium mb-1 block">Category</label>
-                          <Select 
-                            value={newProblem.category}
-                            onValueChange={(value) => setNewProblem({...newProblem, category: value})}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="graph-algorithms">Graph Algorithms</SelectItem>
-                              <SelectItem value="tree-data-structures">Tree Data Structures</SelectItem>
-                              <SelectItem value="search-algorithms">Search Algorithms</SelectItem>
-                              <SelectItem value="dynamic-programming">Dynamic Programming</SelectItem>
-                              <SelectItem value="machine-learning">Machine Learning</SelectItem>
-                              <SelectItem value="combinatorial-algorithms">Combinatorial Algorithms</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Description</label>
-                      <Textarea 
-                        placeholder="Problem description" 
-                        rows={5}
-                        value={newProblem.description}
-                        onChange={(e) => setNewProblem({...newProblem, description: e.target.value})}
+                      <FormField
+                        control={problemForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Problem description" 
+                                rows={5}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Detailed description of the problem including background information
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Example Input</label>
-                      <Textarea 
-                        placeholder="Example input" 
-                        rows={2}
-                        value={newProblem.examples?.[0]?.input || ''}
-                        onChange={(e) => {
-                          const examples = [...(newProblem.examples || [])];
-                          if (examples.length === 0) {
-                            examples.push({ input: e.target.value, output: '' });
-                          } else {
-                            examples[0] = { ...examples[0], input: e.target.value };
-                          }
-                          setNewProblem({...newProblem, examples});
-                        }}
+                      
+                      <FormField
+                        control={problemForm.control}
+                        name="exampleInput"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Example Input</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Example input" 
+                                rows={2}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Example Output</label>
-                      <Textarea 
-                        placeholder="Example output" 
-                        rows={2}
-                        value={newProblem.examples?.[0]?.output || ''}
-                        onChange={(e) => {
-                          const examples = [...(newProblem.examples || [])];
-                          if (examples.length === 0) {
-                            examples.push({ input: '', output: e.target.value });
-                          } else {
-                            examples[0] = { ...examples[0], output: e.target.value };
-                          }
-                          setNewProblem({...newProblem, examples});
-                        }}
+                      
+                      <FormField
+                        control={problemForm.control}
+                        name="exampleOutput"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Example Output</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Example output" 
+                                rows={2}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-1 block">Starter Code (JavaScript)</label>
-                      <Textarea 
-                        placeholder="function solution() { ... }" 
-                        rows={6}
-                        className="font-mono text-sm"
-                        value={newProblem.starterCode?.javascript || ''}
-                        onChange={(e) => {
-                          setNewProblem({
-                            ...newProblem, 
-                            starterCode: { 
-                              ...(newProblem.starterCode || {}), 
-                              javascript: e.target.value 
-                            }
-                          });
-                        }}
+                      
+                      <FormField
+                        control={problemForm.control}
+                        name="exampleExplanation"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Example Explanation (Optional)</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Explanation of the example" 
+                                rows={2}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                    
-                    <Button onClick={handleAddProblem} className="w-full">
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Add Problem
-                    </Button>
-                  </div>
+                      
+                      <FormField
+                        control={problemForm.control}
+                        name="constraints"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Constraints</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="One constraint per line" 
+                                rows={3}
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Enter each constraint on a new line
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={problemForm.control}
+                        name="starterCodeJs"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Starter Code (JavaScript)</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="function solution() { ... }" 
+                                rows={6}
+                                className="font-mono text-sm"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button type="submit" className="w-full">
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Add Problem
+                      </Button>
+                    </form>
+                  </Form>
                 </CardContent>
               </Card>
               
@@ -400,26 +564,72 @@ const Admin = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <Select value={selectedUser} onValueChange={setSelectedUser}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users
-                          .filter(u => !u.isAdmin)
-                          .map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.name} ({user.email})
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Select Existing User</h3>
+                      <Select value={selectedUser} onValueChange={setSelectedUser}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users
+                            .filter(u => !u.isAdmin)
+                            .map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name} ({user.email})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button onClick={handleMakeAdmin} disabled={!selectedUser} className="w-full">
+                        <UserCog className="w-4 h-4 mr-2" />
+                        Make Admin
+                      </Button>
+                    </div>
                     
-                    <Button onClick={handleMakeAdmin} disabled={!selectedUser}>
-                      <UserCog className="w-4 h-4 mr-2" />
-                      Make Admin
-                    </Button>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Admin Access by Email</h3>
+                      <Form {...adminForm}>
+                        <form onSubmit={adminForm.handleSubmit(handleMakeAdminWithKey)} className="space-y-4">
+                          <FormField
+                            control={adminForm.control}
+                            name="email"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>User Email</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="user@example.com" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={adminForm.control}
+                            name="adminKey"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Admin Key</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter admin key" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                  This key is provided by system administrators
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <Button type="submit" className="w-full">
+                            <Shield className="w-4 h-4 mr-2" />
+                            Grant Admin Access
+                          </Button>
+                        </form>
+                      </Form>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -442,7 +652,8 @@ const Admin = () => {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
-                          <TableHead>Admin Status</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>ID</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -450,7 +661,12 @@ const Admin = () => {
                           <TableRow key={user.id}>
                             <TableCell>{user.name}</TableCell>
                             <TableCell>{user.email}</TableCell>
-                            <TableCell>{user.isAdmin ? 'Admin' : 'User'}</TableCell>
+                            <TableCell className={user.isAdmin ? 'text-primary font-medium' : ''}>
+                              {user.isAdmin ? 'Admin' : 'User'}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                              {user.id}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
