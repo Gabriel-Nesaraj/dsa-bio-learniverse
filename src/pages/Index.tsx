@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Network, 
-  ListTree, 
-  Search, 
-  AlignLeft, 
-  GraduationCap, 
+import {
+  Network,
+  ListTree,
+  Search,
+  AlignLeft,
+  GraduationCap,
   BookOpenCheck,
   Code,
   CheckCircle2,
@@ -22,8 +22,55 @@ import {
 } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import ProblemList from '@/components/problems/ProblemList';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 const Index = () => {
+  const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  
+  const bioinformaticsConcepts = [
+    { id: 'sequence-alignment', name: 'Sequence Alignment' },
+    { id: 'genome-assembly', name: 'Genome Assembly' },
+    { id: 'phylogenetics', name: 'Phylogenetics' },
+    { id: 'protein-structure', name: 'Protein Structure' },
+    { id: 'gene-expression', name: 'Gene Expression' },
+    { id: 'motif-finding', name: 'Motif Finding' },
+    { id: 'network-analysis', name: 'Network Analysis' },
+    { id: 'next-gen-sequencing', name: 'Next-Gen Sequencing' },
+  ];
+  
+  const handleToggleConcept = (conceptId: string) => {
+    setSelectedConcepts(prev => 
+      prev.includes(conceptId) 
+        ? prev.filter(id => id !== conceptId) 
+        : [...prev, conceptId]
+    );
+  };
+  
+  const handleToggleDifficulty = (difficulty: string) => {
+    setSelectedDifficulties(prev => 
+      prev.includes(difficulty) 
+        ? prev.filter(d => d !== difficulty) 
+        : [...prev, difficulty]
+    );
+  };
+  
+  const resetFilters = () => {
+    setSelectedConcepts([]);
+    setSelectedDifficulties([]);
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -96,24 +143,101 @@ const Index = () => {
                   </TabsList>
                   
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="w-4 h-4 mr-1" />
-                      Filter
-                    </Button>
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Filter className="w-4 h-4 mr-1" />
+                          Filter
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent>
+                        <SheetHeader>
+                          <SheetTitle>Filter Problems</SheetTitle>
+                          <SheetDescription>
+                            Narrow down problems by difficulty and concepts
+                          </SheetDescription>
+                        </SheetHeader>
+                        
+                        <div className="py-4">
+                          <h3 className="text-sm font-medium mb-3">Difficulty</h3>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="difficulty-easy" 
+                                checked={selectedDifficulties.includes('easy')}
+                                onCheckedChange={() => handleToggleDifficulty('easy')}
+                              />
+                              <Label htmlFor="difficulty-easy" className="text-green-500">Easy</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="difficulty-medium" 
+                                checked={selectedDifficulties.includes('medium')}
+                                onCheckedChange={() => handleToggleDifficulty('medium')}
+                              />
+                              <Label htmlFor="difficulty-medium" className="text-yellow-600">Medium</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="difficulty-hard" 
+                                checked={selectedDifficulties.includes('hard')}
+                                onCheckedChange={() => handleToggleDifficulty('hard')}
+                              />
+                              <Label htmlFor="difficulty-hard" className="text-red-500">Hard</Label>
+                            </div>
+                          </div>
+                          
+                          <Separator className="my-4" />
+                          
+                          <h3 className="text-sm font-medium mb-3">Bioinformatics Concepts</h3>
+                          <div className="grid grid-cols-1 gap-2">
+                            {bioinformaticsConcepts.map(concept => (
+                              <div key={concept.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`concept-${concept.id}`} 
+                                  checked={selectedConcepts.includes(concept.id)}
+                                  onCheckedChange={() => handleToggleConcept(concept.id)}
+                                />
+                                <Label htmlFor={`concept-${concept.id}`}>{concept.name}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <SheetFooter>
+                          <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
+                          <SheetClose asChild>
+                            <Button>Apply Filters</Button>
+                          </SheetClose>
+                        </SheetFooter>
+                      </SheetContent>
+                    </Sheet>
                   </div>
                 </div>
                 
                 <TabsContent value="all" className="m-0">
-                  <ProblemList />
+                  <ProblemList 
+                    concepts={selectedConcepts.length > 0 ? selectedConcepts : undefined}
+                    difficulties={selectedDifficulties.length > 0 ? selectedDifficulties : undefined}
+                  />
                 </TabsContent>
                 <TabsContent value="easy" className="m-0">
-                  <ProblemList difficulty="easy" />
+                  <ProblemList 
+                    difficulty="easy"
+                    concepts={selectedConcepts.length > 0 ? selectedConcepts : undefined}
+                  />
                 </TabsContent>
                 <TabsContent value="medium" className="m-0">
-                  <ProblemList difficulty="medium" />
+                  <ProblemList 
+                    difficulty="medium"
+                    concepts={selectedConcepts.length > 0 ? selectedConcepts : undefined}
+                  />
                 </TabsContent>
                 <TabsContent value="hard" className="m-0">
-                  <ProblemList difficulty="hard" />
+                  <ProblemList 
+                    difficulty="hard"
+                    concepts={selectedConcepts.length > 0 ? selectedConcepts : undefined}
+                  />
                 </TabsContent>
               </Tabs>
             </Card>
