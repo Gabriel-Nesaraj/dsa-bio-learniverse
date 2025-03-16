@@ -16,15 +16,11 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [adminKey, setAdminKey] = useState('');
   const [signupType, setSignupType] = useState('user');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // In a real app, this would be fetched from the server or environment variables
-  const validAdminKey = "bioadmin123";
 
   const handleUserSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,15 +63,6 @@ const Signup = () => {
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (adminKey !== validAdminKey) {
-      toast({
-        title: "Invalid admin key",
-        description: "The admin key you entered is not valid",
         variant: "destructive",
       });
       return;
@@ -236,15 +223,6 @@ const Signup = () => {
                         required
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Input
-                        type="password"
-                        placeholder="Admin Key"
-                        value={adminKey}
-                        onChange={(e) => setAdminKey(e.target.value)}
-                        required
-                      />
-                    </div>
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -254,7 +232,7 @@ const Signup = () => {
                       {!isSubmitting && <Shield className="ml-2 h-4 w-4" />}
                     </Button>
                     <p className="text-xs text-center text-muted-foreground">
-                      Admin access requires a valid admin key provided by system administrators
+                      Admin accounts have special privileges to manage problems and users
                     </p>
                   </form>
                 </CardContent>
