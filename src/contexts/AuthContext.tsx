@@ -81,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check if user already exists
       if (users.some((u: any) => u.email === email)) {
+        console.log('User already exists during signup', { email });
         return false;
       }
       
@@ -100,7 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(false);
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
       
+      console.log('Signup successful', { email, isAdmin: false });
       return true;
+    } catch (error) {
+      console.error('Error during signup:', error);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -141,12 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // New method to upgrade existing user to admin
   const upgradeToAdmin = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      console.log('Attempting to upgrade user to admin', { email });
+      
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       const userIndex = users.findIndex((u: any) => u.email === email && u.password === password);
+      
+      console.log('User found in storage:', userIndex !== -1);
       
       if (userIndex === -1) {
         return false; // User not found or password incorrect

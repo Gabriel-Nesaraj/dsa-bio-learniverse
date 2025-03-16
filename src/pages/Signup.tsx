@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,68 +70,84 @@ const Signup = () => {
     setIsSubmitting(true);
     
     try {
-      // First try to upgrade an existing account
+      // First, check if the user already exists
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       const existingUser = users.find((u: any) => u.email === email);
       
       if (existingUser) {
+        console.log('Found existing user, attempting to upgrade to admin', { email });
+        
         // Try to upgrade the existing account to admin
         const success = await upgradeToAdmin(email, password);
+        
         if (success) {
+          console.log('Successfully upgraded user to admin', { email });
           toast({
             title: "Account upgraded to admin",
             description: "Your existing account now has admin privileges",
           });
-          // Log for debugging
-          console.log('Existing user upgraded to admin, redirecting to /admin');
           navigate('/admin');
-          return;
         } else {
+          console.log('Failed to upgrade user to admin', { email });
           toast({
             title: "Upgrade failed",
             description: "Could not upgrade your account. Please check your password.",
             variant: "destructive",
           });
-          setIsSubmitting(false);
-          return;
         }
-      }
-      
-      // No existing account, create a new admin account
-      const success = await signup(name, email, password);
-      if (success) {
-        // Then update the user to be an admin
-        const updatedUsers = users.map((u: any) => {
-          if (u.email === email) {
-            return { ...u, isAdmin: true };
-          }
-          return u;
-        });
-        
-        localStorage.setItem('users', JSON.stringify(updatedUsers));
-        
-        // Update the current user in storage to be an admin
-        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-        if (currentUser.email === email) {
-          currentUser.isAdmin = true;
-          localStorage.setItem('user', JSON.stringify(currentUser));
-        }
-        
-        // Log for debugging
-        console.log('Admin signup successful, redirecting to /admin');
-        
-        toast({
-          title: "Admin account created",
-          description: "Your admin account has been created successfully",
-        });
-        navigate('/admin');
       } else {
-        toast({
-          title: "Signup failed",
-          description: "Email may already be in use",
-          variant: "destructive",
-        });
+        console.log('Creating new admin user', { email });
+        
+        // Create a new user with admin privileges
+        const success = await signup(name, email, password);
+        
+        if (success) {
+          console.log('User created, now making admin', { email });
+          
+          // Update the users array with admin privilege
+          const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]');
+          const userToUpdate = updatedUsers.find((u: any) => u.email === email);
+          
+          if (userToUpdate) {
+            userToUpdate.isAdmin = true;
+            localStorage.setItem('users', JSON.stringify(updatedUsers));
+            
+            // Update the current user in storage to be an admin
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            if (currentUser.email === email) {
+              currentUser.isAdmin = true;
+              localStorage.setItem('user', JSON.stringify(currentUser));
+            }
+            
+            toast({
+              title: "Admin account created",
+              description: "Your admin account has been created successfully",
+            });
+            navigate('/admin');
+          } else {
+            console.error('User was created but not found in localStorage');
+            toast({
+              title: "Account creation issue",
+              description: "Your account was created but admin privileges could not be applied",
+              variant: "destructive",
+            });
+          }
+        } else {
+          console.log('Failed to create new user', { email });
+          toast({
+            title: "Signup failed",
+            description: "Email may already be in use",
+            variant: "destructive",
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error during admin signup:', error);
+      toast({
+        title: "Signup error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
