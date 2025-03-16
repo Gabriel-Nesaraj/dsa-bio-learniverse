@@ -59,6 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userWithoutPassword);
         setIsAdmin(!!userWithoutPassword.isAdmin);
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        
+        // Log for debugging
+        console.log('Login successful', { user: userWithoutPassword, isAdmin: !!userWithoutPassword.isAdmin });
+        
         return true;
       }
       return false;

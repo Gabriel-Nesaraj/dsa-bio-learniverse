@@ -49,11 +49,9 @@ const Login = () => {
     setIsSubmitting(true);
     
     try {
-      // In this example, admin login just uses the regular login
-      // In a real app, you'd have a separate admin login endpoint
       const success = await login(email, password);
       if (success) {
-        // Check if the user is an admin - this requires the AuthContext to be updated
+        // Check if the user is an admin
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
@@ -62,6 +60,11 @@ const Login = () => {
               title: "Admin login successful",
               description: "Welcome back, admin!",
             });
+            
+            // Log for debugging
+            console.log('Admin login successful, redirecting to /admin');
+            
+            // Make sure to use the correct path for admin
             navigate('/admin');
           } else {
             toast({

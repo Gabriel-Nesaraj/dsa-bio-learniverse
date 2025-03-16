@@ -21,6 +21,9 @@ import Profile from "./pages/Profile";
 const queryClient = new QueryClient();
 
 const App = () => {
+  // For debugging
+  console.log("App rendering, routes initialized");
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

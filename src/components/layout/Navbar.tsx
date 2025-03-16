@@ -15,6 +15,13 @@ const Navbar = () => {
   const location = useLocation();
   const { toast } = useToast();
 
+  // For debugging
+  useEffect(() => {
+    if (user) {
+      console.log("Navbar user state:", { user, isAdmin });
+    }
+  }, [user, isAdmin]);
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -42,8 +49,12 @@ const Navbar = () => {
   ];
 
   // Add admin link if user is admin
+  // Make sure this is outside any conditional rendering
   if (user && isAdmin) {
-    navItems.push({ name: 'Admin', path: '/admin' });
+    // Check if Admin is already in the navItems
+    if (!navItems.some(item => item.name === 'Admin')) {
+      navItems.push({ name: 'Admin', path: '/admin' });
+    }
   }
 
   return (

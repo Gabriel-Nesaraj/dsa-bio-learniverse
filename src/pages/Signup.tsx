@@ -92,6 +92,9 @@ const Signup = () => {
           localStorage.setItem('user', JSON.stringify(currentUser));
         }
         
+        // Log for debugging
+        console.log('Admin signup successful, redirecting to /admin');
+        
         toast({
           title: "Admin account created",
           description: "Your admin account has been created successfully",
