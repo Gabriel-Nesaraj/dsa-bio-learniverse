@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [adminKey, setAdminKey] = useState('');
   const [loginType, setLoginType] = useState('user');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
