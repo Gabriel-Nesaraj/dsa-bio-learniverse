@@ -18,7 +18,7 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [signupType, setSignupType] = useState('user');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signup } = useAuth();
+  const { signup, upgradeToAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,11 +71,37 @@ const Signup = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a regular user account first
+      // First try to upgrade an existing account
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const existingUser = users.find((u: any) => u.email === email);
+      
+      if (existingUser) {
+        // Try to upgrade the existing account to admin
+        const success = await upgradeToAdmin(email, password);
+        if (success) {
+          toast({
+            title: "Account upgraded to admin",
+            description: "Your existing account now has admin privileges",
+          });
+          // Log for debugging
+          console.log('Existing user upgraded to admin, redirecting to /admin');
+          navigate('/admin');
+          return;
+        } else {
+          toast({
+            title: "Upgrade failed",
+            description: "Could not upgrade your account. Please check your password.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // No existing account, create a new admin account
       const success = await signup(name, email, password);
       if (success) {
         // Then update the user to be an admin
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
         const updatedUsers = users.map((u: any) => {
           if (u.email === email) {
             return { ...u, isAdmin: true };

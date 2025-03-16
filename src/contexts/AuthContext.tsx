@@ -16,6 +16,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAdmin: boolean;
   makeUserAdmin: (userId: string) => Promise<boolean>;
+  upgradeToAdmin: (email: string, password: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -140,6 +141,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // New method to upgrade existing user to admin
+  const upgradeToAdmin = async (email: string, password: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const userIndex = users.findIndex((u: any) => u.email === email && u.password === password);
+      
+      if (userIndex === -1) {
+        return false; // User not found or password incorrect
+      }
+      
+      // Update the user to be an admin
+      users[userIndex] = { ...users[userIndex], isAdmin: true };
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      // If the user is currently logged in, update the current session
+      if (user && user.email === email) {
+        const updatedUser = { ...user, isAdmin: true };
+        setUser(updatedUser);
+        setIsAdmin(true);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      console.log('User upgraded to admin successfully', { email });
+      return true;
+    } catch (error) {
+      console.error("Error upgrading user to admin:", error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -148,7 +182,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout, 
       isLoading, 
       isAdmin,
-      makeUserAdmin 
+      makeUserAdmin,
+      upgradeToAdmin
     }}>
       {children}
     </AuthContext.Provider>
