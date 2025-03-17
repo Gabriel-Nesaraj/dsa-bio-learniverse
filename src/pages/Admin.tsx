@@ -8,24 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
-import { PlusCircle, UserCog, FileText, ListChecks, Shield } from 'lucide-react';
+import { PlusCircle, UserCog, FileText, ListChecks, Shield, Eye, Edit } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import ProblemEditor from '@/components/admin/ProblemEditor';
+import ProblemViewer from '@/components/admin/ProblemViewer';
 
 // Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -62,19 +55,6 @@ type Submission = {
   timestamp: number;
 };
 
-// Schema for problem form validation
-const problemSchema = z.object({
-  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  difficulty: z.enum(["easy", "medium", "hard"]),
-  category: z.string(),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  exampleInput: z.string(),
-  exampleOutput: z.string(),
-  exampleExplanation: z.string().optional(),
-  constraints: z.string(),
-  starterCodeJs: z.string()
-});
-
 // Schema for admin creation form
 const adminCreationSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
@@ -82,12 +62,14 @@ const adminCreationSchema = z.object({
 });
 
 const Admin = () => {
-  const { user, isAdmin, makeUserAdmin, isLoading } = useAuth();
+  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('problems');
   
   // For problem management
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [problemView, setProblemView] = useState<'list' | 'view' | 'edit'>('list');
+  const [selectedProblemId, setSelectedProblemId] = useState<number | null>(null);
   
   // For user management
   const [users, setUsers] = useState<User[]>([]);
@@ -99,22 +81,6 @@ const Admin = () => {
   // For admin key (in real app, this would be environment variable)
   const adminKey = "bioadmin123"; // Example only - in production use a secure value
   
-  // Problem form
-  const problemForm = useForm<z.infer<typeof problemSchema>>({
-    resolver: zodResolver(problemSchema),
-    defaultValues: {
-      title: "",
-      difficulty: "medium",
-      category: "dynamic-programming",
-      description: "",
-      exampleInput: "",
-      exampleOutput: "",
-      exampleExplanation: "",
-      constraints: "",
-      starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
-    },
-  });
-
   // Admin creation form
   const adminForm = useForm<z.infer<typeof adminCreationSchema>>({
     resolver: zodResolver(adminCreationSchema),
@@ -123,6 +89,13 @@ const Admin = () => {
       adminKey: ""
     },
   });
+  
+  // Update user activity to prevent progress reset
+  useEffect(() => {
+    if (user) {
+      updateUserActivity();
+    }
+  }, [user, updateUserActivity]);
   
   useEffect(() => {
     // Redirect if not admin
@@ -152,45 +125,39 @@ const Admin = () => {
     if (storedSubmissions) {
       setSubmissions(JSON.parse(storedSubmissions));
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [isAdmin, isLoading, navigate, updateUserActivity]);
   
-  const handleAddProblem = (data: z.infer<typeof problemSchema>) => {
-    // Generate slug from title
-    const slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    
-    // Generate ID (normally this would be handled by a backend)
-    const id = problems.length > 0 ? Math.max(...problems.map(p => p.id)) + 1 : 1;
-    
-    // Parse constraints into array
-    const constraintsArray = data.constraints
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-    
-    const problem: Problem = {
-      id,
-      title: data.title,
-      slug,
-      difficulty: data.difficulty as Difficulty,
-      category: data.category,
-      description: data.description,
-      examples: [{
-        input: data.exampleInput,
-        output: data.exampleOutput,
-        explanation: data.exampleExplanation
-      }],
-      constraints: constraintsArray,
-      starterCode: { javascript: data.starterCodeJs }
-    };
-    
-    const updatedProblems = [...problems, problem];
-    setProblems(updatedProblems);
-    localStorage.setItem('problems', JSON.stringify(updatedProblems));
-    
-    // Reset form
-    problemForm.reset();
-    
-    toast.success("Problem added successfully!");
+  const selectedProblem = selectedProblemId 
+    ? problems.find(p => p.id === selectedProblemId) 
+    : null;
+  
+  // Problem management functions
+  const handleAddProblem = () => {
+    setSelectedProblemId(null);
+    setProblemView('edit');
+  };
+  
+  const handleViewProblem = (id: number) => {
+    setSelectedProblemId(id);
+    setProblemView('view');
+  };
+  
+  const handleEditProblem = (id: number) => {
+    setSelectedProblemId(id);
+    setProblemView('edit');
+  };
+  
+  const handleProblemSaved = () => {
+    // Refresh problems list
+    const storedProblems = localStorage.getItem('problems');
+    if (storedProblems) {
+      setProblems(JSON.parse(storedProblems));
+    }
+    setProblemView('list');
+  };
+  
+  const handleProblemCancel = () => {
+    setProblemView('list');
   };
   
   const handleMakeAdmin = async () => {
@@ -293,265 +260,91 @@ const Admin = () => {
             
             {/* Problems Tab */}
             <TabsContent value="problems" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add New Problem</CardTitle>
-                  <CardDescription>
-                    Create a new bioinformatics problem for users to solve
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...problemForm}>
-                    <form onSubmit={problemForm.handleSubmit(handleAddProblem)} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={problemForm.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Problem title" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={problemForm.control}
-                            name="difficulty"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Difficulty</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select difficulty" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="easy">Easy</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="hard">Hard</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <FormField
-                            control={problemForm.control}
-                            name="category"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Category</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="graph-algorithms">Graph Algorithms</SelectItem>
-                                    <SelectItem value="tree-data-structures">Tree Data Structures</SelectItem>
-                                    <SelectItem value="search-algorithms">Search Algorithms</SelectItem>
-                                    <SelectItem value="dynamic-programming">Dynamic Programming</SelectItem>
-                                    <SelectItem value="machine-learning">Machine Learning</SelectItem>
-                                    <SelectItem value="combinatorial-algorithms">Combinatorial Algorithms</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Problem description" 
-                                rows={5}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Detailed description of the problem including background information
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="exampleInput"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Example Input</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Example input" 
-                                rows={2}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="exampleOutput"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Example Output</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Example output" 
-                                rows={2}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="exampleExplanation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Example Explanation (Optional)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Explanation of the example" 
-                                rows={2}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="constraints"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Constraints</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="One constraint per line" 
-                                rows={3}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Enter each constraint on a new line
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={problemForm.control}
-                        name="starterCodeJs"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Starter Code (JavaScript)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="function solution() { ... }" 
-                                rows={6}
-                                className="font-mono text-sm"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button type="submit" className="w-full">
-                        <PlusCircle className="w-4 h-4 mr-2" />
-                        Add Problem
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+              {problemView === 'list' && (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">Problems</h2>
+                    <Button onClick={handleAddProblem}>
+                      <PlusCircle className="w-4 h-4 mr-2" />
+                      Add Problem
+                    </Button>
+                  </div>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Existing Problems</CardTitle>
-                  <CardDescription>
-                    Manage your existing bioinformatics problems
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {problems.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No problems added yet
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ID</TableHead>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Difficulty</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {problems.map((problem) => (
-                          <TableRow key={problem.id}>
-                            <TableCell>{problem.id}</TableCell>
-                            <TableCell>{problem.title}</TableCell>
-                            <TableCell className={
-                              problem.difficulty === 'easy' ? 'text-green-500' : 
-                              problem.difficulty === 'medium' ? 'text-yellow-600' : 
-                              'text-red-500'
-                            }>
-                              {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-                            </TableCell>
-                            <TableCell>
-                              {problem.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={`/problem/${problem.slug}`} target="_blank" rel="noopener noreferrer">
-                                  View
-                                </a>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Existing Problems</CardTitle>
+                      <CardDescription>
+                        Manage your existing bioinformatics problems
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {problems.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No problems added yet
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>ID</TableHead>
+                              <TableHead>Title</TableHead>
+                              <TableHead>Difficulty</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {problems.map((problem) => (
+                              <TableRow key={problem.id}>
+                                <TableCell>{problem.id}</TableCell>
+                                <TableCell>{problem.title}</TableCell>
+                                <TableCell className={
+                                  problem.difficulty === 'easy' ? 'text-green-500' : 
+                                  problem.difficulty === 'medium' ? 'text-yellow-600' : 
+                                  'text-red-500'
+                                }>
+                                  {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
+                                </TableCell>
+                                <TableCell>
+                                  {problem.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => handleViewProblem(problem.id)}>
+                                      <Eye className="w-4 h-4 mr-1" />
+                                      View
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleEditProblem(problem.id)}>
+                                      <Edit className="w-4 h-4 mr-1" />
+                                      Edit
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              
+              {problemView === 'view' && selectedProblem && (
+                <ProblemViewer 
+                  problem={selectedProblem} 
+                  onBack={handleProblemCancel}
+                  onEdit={handleEditProblem}
+                />
+              )}
+              
+              {problemView === 'edit' && (
+                <ProblemEditor 
+                  problemId={selectedProblemId || undefined}
+                  onSave={handleProblemSaved}
+                  onCancel={handleProblemCancel}
+                />
+              )}
             </TabsContent>
             
             {/* Users Tab */}

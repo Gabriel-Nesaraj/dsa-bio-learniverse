@@ -6,6 +6,7 @@ type User = {
   name: string;
   email: string;
   isAdmin?: boolean;
+  lastActivity?: number; // Track last activity time
 };
 
 type AuthContextType = {
@@ -17,6 +18,7 @@ type AuthContextType = {
   isAdmin: boolean;
   makeUserAdmin: (userId: string) => Promise<boolean>;
   upgradeToAdmin: (email: string, password: string) => Promise<boolean>;
+  updateUserActivity: () => void; // New method to update user activity
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +47,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  // Update user activity to prevent progress reset
+  const updateUserActivity = () => {
+    if (user) {
+      const updatedUser = { ...user, lastActivity: Date.now() };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Also update in users collection
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.map((u: any) => {
+        if (u.id === user.id) {
+          const { password, ...userWithoutPassword } = { 
+            ...u, 
+            lastActivity: Date.now() 
+          };
+          return { ...u, lastActivity: Date.now() };
+        }
+        return u;
+      });
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+    }
+  };
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -57,12 +82,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (foundUser) {
         const { password, ...userWithoutPassword } = foundUser;
-        setUser(userWithoutPassword);
-        setIsAdmin(!!userWithoutPassword.isAdmin);
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        const userWithActivity = { 
+          ...userWithoutPassword, 
+          lastActivity: Date.now() 
+        };
+        
+        setUser(userWithActivity);
+        setIsAdmin(!!userWithActivity.isAdmin);
+        localStorage.setItem('user', JSON.stringify(userWithActivity));
+        
+        // Update user's last activity in users collection
+        const updatedUsers = users.map((u: any) => {
+          if (u.id === foundUser.id) {
+            return { ...u, lastActivity: Date.now() };
+          }
+          return u;
+        });
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
         
         // Log for debugging
-        console.log('Login successful', { user: userWithoutPassword, isAdmin: !!userWithoutPassword.isAdmin });
+        console.log('Login successful', { user: userWithActivity, isAdmin: !!userWithActivity.isAdmin });
         
         return true;
       }
@@ -191,7 +230,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading, 
       isAdmin,
       makeUserAdmin,
-      upgradeToAdmin
+      upgradeToAdmin,
+      updateUserActivity
     }}>
       {children}
     </AuthContext.Provider>
