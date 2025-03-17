@@ -31,6 +31,24 @@ interface ProblemViewerProps {
 }
 
 const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }) => {
+  // Add null check for problem
+  if (!problem) {
+    console.error("Problem is undefined in ProblemViewer");
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={onBack} className="p-0 h-auto">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Problems
+        </Button>
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-center text-muted-foreground">Problem not found or failed to load.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const getDifficultyColor = (difficulty: Difficulty) => {
     switch (difficulty) {
       case 'easy': return 'text-green-500';

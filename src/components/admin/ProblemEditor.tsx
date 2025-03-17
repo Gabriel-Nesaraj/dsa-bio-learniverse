@@ -85,19 +85,27 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         const problem = problems.find((p: Problem) => p.id === problemId);
         
         if (problem) {
-          const constraintsText = problem.constraints.join('\n');
+          // Add console.log for debugging
+          console.log("Found problem for editing:", problem);
+          
+          // Safely process constraints - handle if they're undefined
+          const constraintsText = problem.constraints && Array.isArray(problem.constraints) 
+            ? problem.constraints.join('\n') 
+            : '';
           
           form.reset({
-            title: problem.title,
-            difficulty: problem.difficulty,
-            category: problem.category,
-            description: problem.description,
-            exampleInput: problem.examples[0]?.input || '',
-            exampleOutput: problem.examples[0]?.output || '',
-            exampleExplanation: problem.examples[0]?.explanation || '',
+            title: problem.title || '',
+            difficulty: problem.difficulty || 'medium',
+            category: problem.category || 'dynamic-programming',
+            description: problem.description || '',
+            exampleInput: problem.examples && problem.examples[0] ? problem.examples[0].input || '' : '',
+            exampleOutput: problem.examples && problem.examples[0] ? problem.examples[0].output || '' : '',
+            exampleExplanation: problem.examples && problem.examples[0] && problem.examples[0].explanation ? problem.examples[0].explanation : '',
             constraints: constraintsText,
-            starterCodeJs: problem.starterCode.javascript || ''
+            starterCodeJs: problem.starterCode && problem.starterCode.javascript ? problem.starterCode.javascript : ''
           });
+        } else {
+          console.log("Problem not found with ID:", problemId);
         }
       }
     } else {
@@ -117,6 +125,8 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
   }, [problemId, form]);
   
   const handleSubmit = (data: z.infer<typeof problemSchema>) => {
+    console.log("Submitting form with data:", data);
+    
     // Generate slug from title
     const slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
     
