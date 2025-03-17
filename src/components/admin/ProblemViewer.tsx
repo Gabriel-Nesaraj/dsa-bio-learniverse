@@ -3,7 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, Trash } from 'lucide-react';
+import { toast } from "sonner";
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -39,6 +40,23 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
     }
   };
   
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this problem? This action cannot be undone.")) {
+      const storedProblems = localStorage.getItem('problems');
+      if (storedProblems) {
+        const problems = JSON.parse(storedProblems);
+        const updatedProblems = problems.filter((p: Problem) => p.id !== problem.id);
+        localStorage.setItem('problems', JSON.stringify(updatedProblems));
+        
+        toast.success("Problem deleted successfully!");
+        onBack();
+      }
+    }
+  };
+  
+  // Using console.log to debug
+  console.log("ProblemViewer rendering with problem:", problem);
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -46,10 +64,16 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Problems
         </Button>
-        <Button onClick={() => onEdit(problem.id)}>
-          <Edit className="w-4 h-4 mr-2" />
-          Edit Problem
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => onEdit(problem.id)}>
+            <Edit className="w-4 h-4 mr-2" />
+            Edit Problem
+          </Button>
+          <Button variant="destructive" onClick={handleDelete}>
+            <Trash className="w-4 h-4 mr-2" />
+            Delete Problem
+          </Button>
+        </div>
       </div>
       
       <div>
@@ -84,7 +108,7 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {problem.examples.map((example, index) => (
+            {problem.examples && problem.examples.map((example, index) => (
               <div key={index} className="space-y-2">
                 <h3 className="font-medium">Example {index + 1}:</h3>
                 <div className="bg-muted p-3 rounded-md">
@@ -112,7 +136,7 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
         </CardHeader>
         <CardContent>
           <ul className="list-disc pl-5 space-y-1">
-            {problem.constraints.map((constraint, index) => (
+            {problem.constraints && problem.constraints.map((constraint, index) => (
               <li key={index} className="text-sm text-muted-foreground">{constraint}</li>
             ))}
           </ul>
@@ -125,7 +149,9 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
         </CardHeader>
         <CardContent>
           <pre className="bg-muted p-4 rounded-md overflow-x-auto font-mono text-sm">
-            {problem.starterCode.javascript || 'No starter code available'}
+            {problem.starterCode && problem.starterCode.javascript 
+              ? problem.starterCode.javascript 
+              : 'No starter code available'}
           </pre>
         </CardContent>
       </Card>
