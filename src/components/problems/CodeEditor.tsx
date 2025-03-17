@@ -28,7 +28,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   return (
-    <div className={`${readOnly ? 'h-auto min-h-[200px] max-h-[400px]' : 'h-96'} bg-muted font-mono text-sm flex flex-col overflow-auto`}>
+    <div className={`${readOnly ? 'h-auto min-h-[200px] max-h-[400px]' : 'h-96'} bg-muted rounded-md font-mono text-sm flex flex-col overflow-auto`}>
+      <div className="bg-muted-foreground/10 px-4 py-2 text-xs text-muted-foreground border-b">
+        {language.charAt(0).toUpperCase() + language.slice(1)}
+      </div>
       <textarea
         value={code}
         onChange={handleCodeChange}

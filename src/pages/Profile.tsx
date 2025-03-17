@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { User, Code, Activity, Clock, CheckCircle } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { BarChart } from '@/components/ui/bar-chart';
+import { Progress } from '@/components/ui/progress';
 
 type Submission = {
   id: string;
@@ -136,11 +137,8 @@ const Profile = () => {
                   <div className="text-3xl font-bold">{solvedCount}</div>
                   <div className="text-sm text-muted-foreground">of {totalProblems} total</div>
                 </div>
-                <div className="mt-4 h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-primary h-full rounded-full" 
-                    style={{ width: `${totalProblems > 0 ? (solvedCount / totalProblems) * 100 : 0}%` }}
-                  ></div>
+                <div className="mt-4">
+                  <Progress value={totalProblems > 0 ? (solvedCount / totalProblems) * 100 : 0} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -160,17 +158,14 @@ const Profile = () => {
                     {submissions.filter(s => s.status === 'accepted').length} of {submissions.length} submissions
                   </div>
                 </div>
-                <div className="mt-4 h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-green-500 h-full rounded-full" 
-                    style={{ 
-                      width: `${
-                        submissions.length > 0 
-                          ? (submissions.filter(s => s.status === 'accepted').length / submissions.length) * 100 
-                          : 0
-                      }%` 
-                    }}
-                  ></div>
+                <div className="mt-4">
+                  <Progress 
+                    value={submissions.length > 0 
+                      ? (submissions.filter(s => s.status === 'accepted').length / submissions.length) * 100 
+                      : 0
+                    } 
+                    className="h-2 bg-gray-200" 
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -348,4 +343,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
