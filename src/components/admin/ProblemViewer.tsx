@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Trash } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Edit, Trash, Code } from 'lucide-react';
 import { toast } from "sonner";
+import CodeEditor from '@/components/problems/CodeEditor';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -24,6 +26,16 @@ type Problem = {
   starterCode: Record<string, string>;
 };
 
+type Submission = {
+  id: string;
+  userId: string;
+  problemId: number;
+  code: string;
+  language: string;
+  status: 'accepted' | 'wrong_answer' | 'time_limit_exceeded' | 'runtime_error';
+  timestamp: number;
+};
+
 interface ProblemViewerProps {
   problem: Problem;
   onBack: () => void;
@@ -31,6 +43,9 @@ interface ProblemViewerProps {
 }
 
 const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }) => {
+  const [activeTab, setActiveTab] = useState('description');
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  
   // Add null check for problem
   if (!problem) {
     console.error("Problem is undefined in ProblemViewer");
@@ -48,6 +63,16 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
       </div>
     );
   }
+  
+  // Load submissions for this problem
+  useEffect(() => {
+    const storedSubmissions = localStorage.getItem('submissions');
+    if (storedSubmissions) {
+      const allSubmissions = JSON.parse(storedSubmissions);
+      const problemSubmissions = allSubmissions.filter((s: Submission) => s.problemId === problem.id);
+      setSubmissions(problemSubmissions);
+    }
+  }, [problem.id]);
 
   const getDifficultyColor = (difficulty: Difficulty) => {
     switch (difficulty) {
@@ -74,6 +99,7 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
   
   // Using console.log to debug
   console.log("ProblemViewer rendering with problem:", problem);
+  console.log("Submissions for this problem:", submissions);
   
   return (
     <div className="space-y-6">
@@ -111,68 +137,129 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Description</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="whitespace-pre-line">{problem.description}</p>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Examples</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {problem.examples && problem.examples.map((example, index) => (
-              <div key={index} className="space-y-2">
-                <h3 className="font-medium">Example {index + 1}:</h3>
-                <div className="bg-muted p-3 rounded-md">
-                  <p className="font-mono text-sm whitespace-pre-line">
-                    <span className="text-muted-foreground">Input: </span>{example.input}
-                  </p>
-                  <p className="font-mono text-sm whitespace-pre-line mt-2">
-                    <span className="text-muted-foreground">Output: </span>{example.output}
-                  </p>
-                  {example.explanation && (
-                    <p className="text-sm mt-2">
-                      <span className="text-muted-foreground">Explanation: </span>{example.explanation}
-                    </p>
-                  )}
-                </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="description">Description</TabsTrigger>
+          <TabsTrigger value="solutions">
+            Solutions ({submissions.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="description" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Description</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-line">{problem.description}</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Examples</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {problem.examples && problem.examples.map((example, index) => (
+                  <div key={index} className="space-y-2">
+                    <h3 className="font-medium">Example {index + 1}:</h3>
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="font-mono text-sm whitespace-pre-line">
+                        <span className="text-muted-foreground">Input: </span>{example.input}
+                      </p>
+                      <p className="font-mono text-sm whitespace-pre-line mt-2">
+                        <span className="text-muted-foreground">Output: </span>{example.output}
+                      </p>
+                      {example.explanation && (
+                        <p className="text-sm mt-2">
+                          <span className="text-muted-foreground">Explanation: </span>{example.explanation}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Constraints</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="list-disc pl-5 space-y-1">
-            {problem.constraints && problem.constraints.map((constraint, index) => (
-              <li key={index} className="text-sm text-muted-foreground">{constraint}</li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Starter Code (JavaScript)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="bg-muted p-4 rounded-md overflow-x-auto font-mono text-sm">
-            {problem.starterCode && problem.starterCode.javascript 
-              ? problem.starterCode.javascript 
-              : 'No starter code available'}
-          </pre>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Constraints</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc pl-5 space-y-1">
+                {problem.constraints && problem.constraints.map((constraint, index) => (
+                  <li key={index} className="text-sm text-muted-foreground">{constraint}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Starter Code (JavaScript)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-muted p-4 rounded-md overflow-x-auto font-mono text-sm">
+                {problem.starterCode && problem.starterCode.javascript 
+                  ? problem.starterCode.javascript 
+                  : 'No starter code available'}
+              </pre>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="solutions" className="space-y-6 pt-4">
+          {submissions.length === 0 ? (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-muted-foreground">No solutions submitted for this problem yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {submissions.map((submission) => {
+                // Get user information
+                const usersString = localStorage.getItem('users');
+                const users = usersString ? JSON.parse(usersString) : [];
+                const user = users.find((u: any) => u.id === submission.userId);
+                
+                return (
+                  <Card key={submission.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Code className="w-5 h-5 text-primary" />
+                          {user ? user.name : 'Unknown User'}
+                        </CardTitle>
+                        <div className={`px-2 py-1 rounded-full text-xs ${
+                          submission.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {submission.status.replace('_', ' ').split(' ').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                          ).join(' ')}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Submitted: {new Date(submission.timestamp).toLocaleString()}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CodeEditor 
+                        language={submission.language}
+                        code={submission.code}
+                        readOnly={true}
+                      />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

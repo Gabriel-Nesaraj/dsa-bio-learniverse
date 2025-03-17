@@ -28,7 +28,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   return (
-    <div className="h-96 bg-muted font-mono text-sm flex flex-col">
+    <div className={`${readOnly ? 'h-auto min-h-[200px] max-h-[400px]' : 'h-96'} bg-muted font-mono text-sm flex flex-col overflow-auto`}>
       <textarea
         value={code}
         onChange={handleCodeChange}
@@ -42,9 +42,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         autoCorrect="off"
       />
       {readOnly && (
-        <div className="text-center p-4 text-muted-foreground text-xs">
-          Note: This is a simplified code editor representation. 
-          In a real application, we would integrate Monaco Editor or CodeMirror.
+        <div className="text-center p-2 text-muted-foreground text-xs">
+          Read-only solution view
         </div>
       )}
     </div>
