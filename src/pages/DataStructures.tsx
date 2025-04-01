@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -216,51 +215,47 @@ const DataStructures = () => {
               const categoryProblems = getProblemsByCategory(ds.category);
               
               return (
-                <Card key={index} className="p-6 h-full hover:shadow-md transition-all border">
-                  <div className="flex flex-col h-full">
-                    <div className="mb-4 flex justify-between items-center">
-                      {ds.icon}
-                      <Badge variant="outline" className="text-xs">
-                        {categoryProblems.length} problems
-                      </Badge>
+                <Link to={ds.link} key={index}>
+                  <Card className="p-6 h-full hover:shadow-md transition-all border">
+                    <div className="flex flex-col h-full">
+                      <div className="mb-4 flex justify-between items-center">
+                        {ds.icon}
+                        <Badge variant="outline" className="text-xs">
+                          {categoryProblems.length} problems
+                        </Badge>
+                      </div>
+                      <h2 className="text-xl font-semibold mb-2">{ds.title}</h2>
+                      <p className="text-muted-foreground text-sm mb-4">{ds.description}</p>
+                      
+                      {/* Problems list */}
+                      {categoryProblems.length > 0 ? (
+                        <div className="mt-3 space-y-2 mb-4 flex-grow">
+                          <h3 className="font-medium text-sm">Practice Problems:</h3>
+                          <ul className="space-y-2">
+                            {categoryProblems.slice(0, 3).map(problem => (
+                              <li key={problem.id} className="flex items-center gap-2 text-sm">
+                                {solvedProblems.has(problem.id) ? (
+                                  <CheckCircle2 className="text-green-500 w-4 h-4 flex-shrink-0" />
+                                ) : (
+                                  <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
+                                )}
+                                <span className="flex-grow truncate">{problem.title}</span>
+                                <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                              </li>
+                            ))}
+                            {categoryProblems.length > 3 && (
+                              <li className="text-xs text-muted-foreground italic">
+                                + {categoryProblems.length - 3} more problems
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic mb-4 flex-grow">No problems available in this category yet.</p>
+                      )}
                     </div>
-                    <h2 className="text-xl font-semibold mb-2">{ds.title}</h2>
-                    <p className="text-muted-foreground text-sm mb-4">{ds.description}</p>
-                    
-                    {/* Problems list */}
-                    {categoryProblems.length > 0 ? (
-                      <div className="mt-3 space-y-2 mb-4 flex-grow">
-                        <h3 className="font-medium text-sm">Practice Problems:</h3>
-                        <ul className="space-y-2">
-                          {categoryProblems.slice(0, 3).map(problem => (
-                            <li key={problem.id} className="flex items-center gap-2 text-sm">
-                              {solvedProblems.has(problem.id) ? (
-                                <CheckCircle2 className="text-green-500 w-4 h-4 flex-shrink-0" />
-                              ) : (
-                                <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
-                              )}
-                              <span className="flex-grow truncate">{problem.title}</span>
-                              <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
-                            </li>
-                          ))}
-                          {categoryProblems.length > 3 && (
-                            <li className="text-xs text-muted-foreground italic">
-                              + {categoryProblems.length - 3} more problems
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic mb-4 flex-grow">No problems available in this category yet.</p>
-                    )}
-                    
-                    <Link to={ds.link} className="mt-auto">
-                      <div className="bg-primary/10 hover:bg-primary/20 text-primary text-center py-2 rounded-md text-sm transition-colors">
-                        Explore {ds.title}
-                      </div>
-                    </Link>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               );
             })}
           </div>
