@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -35,9 +35,40 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
+// Define Problem type for displaying categories
+type Problem = {
+  id: number;
+  title: string;
+  slug: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+  bioinformaticsConcepts?: string[];
+};
+
 const Index = () => {
   const [selectedConcepts, setSelectedConcepts] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [problemsByCategory, setProblemsByCategory] = useState<Record<string, Problem[]>>({});
+  
+  // Load problems when component mounts
+  useEffect(() => {
+    const storedProblems = localStorage.getItem('problems');
+    if (storedProblems) {
+      const loadedProblems = JSON.parse(storedProblems);
+      setProblems(loadedProblems);
+      
+      // Group problems by category
+      const groupedProblems: Record<string, Problem[]> = {};
+      loadedProblems.forEach((problem: Problem) => {
+        if (!groupedProblems[problem.category]) {
+          groupedProblems[problem.category] = [];
+        }
+        groupedProblems[problem.category].push(problem);
+      });
+      setProblemsByCategory(groupedProblems);
+    }
+  }, []);
   
   const bioinformaticsConcepts = [
     { id: 'sequence-alignment', name: 'Sequence Alignment' },
@@ -71,6 +102,21 @@ const Index = () => {
     setSelectedDifficulties([]);
   };
   
+  // Helper function to get category name from slug
+  const getCategoryName = (categorySlug: string): string => {
+    return categorySlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+  
+  // Helper to get difficulty color
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'text-green-500';
+      case 'medium': return 'text-yellow-600';
+      case 'hard': return 'text-red-500';
+      default: return '';
+    }
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
@@ -95,36 +141,150 @@ const Index = () => {
                     <Network className="w-4 h-4 text-blue-500" />
                     <span>Graph Algorithms</span>
                   </Link>
+                  {problemsByCategory['graph-algorithms'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['graph-algorithms'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['graph-algorithms'].length > 3 && (
+                        <li>
+                          <Link to="/problems/graph-algorithms" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['graph-algorithms'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
                 <li>
                   <Link to="/problems/tree-data-structures" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
                     <ListTree className="w-4 h-4 text-green-500" />
                     <span>Tree Data Structures</span>
                   </Link>
+                  {problemsByCategory['tree-data-structures'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['tree-data-structures'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['tree-data-structures'].length > 3 && (
+                        <li>
+                          <Link to="/problems/tree-data-structures" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['tree-data-structures'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
                 <li>
                   <Link to="/problems/search-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
                     <Search className="w-4 h-4 text-purple-500" />
                     <span>Search Algorithms</span>
                   </Link>
+                  {problemsByCategory['search-algorithms'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['search-algorithms'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['search-algorithms'].length > 3 && (
+                        <li>
+                          <Link to="/problems/search-algorithms" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['search-algorithms'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
                 <li>
                   <Link to="/problems/dynamic-programming" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
                     <AlignLeft className="w-4 h-4 text-amber-500" />
                     <span>Dynamic Programming</span>
                   </Link>
+                  {problemsByCategory['dynamic-programming'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['dynamic-programming'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['dynamic-programming'].length > 3 && (
+                        <li>
+                          <Link to="/problems/dynamic-programming" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['dynamic-programming'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
                 <li>
                   <Link to="/problems/machine-learning" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
                     <GraduationCap className="w-4 h-4 text-pink-500" />
                     <span>Machine Learning</span>
                   </Link>
+                  {problemsByCategory['machine-learning'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['machine-learning'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['machine-learning'].length > 3 && (
+                        <li>
+                          <Link to="/problems/machine-learning" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['machine-learning'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
                 <li>
                   <Link to="/problems/combinatorial-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
                     <BookOpenCheck className="w-4 h-4 text-indigo-500" />
                     <span>Combinatorial Algorithms</span>
                   </Link>
+                  {problemsByCategory['combinatorial-algorithms'] && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {problemsByCategory['combinatorial-algorithms'].slice(0, 3).map(problem => (
+                        <li key={problem.id}>
+                          <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
+                            <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            {problem.title}
+                          </Link>
+                        </li>
+                      ))}
+                      {problemsByCategory['combinatorial-algorithms'].length > 3 && (
+                        <li>
+                          <Link to="/problems/combinatorial-algorithms" className="text-xs text-primary hover:underline ml-3">
+                            View all ({problemsByCategory['combinatorial-algorithms'].length})
+                          </Link>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </li>
               </ul>
             </Card>
