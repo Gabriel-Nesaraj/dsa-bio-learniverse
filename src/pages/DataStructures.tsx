@@ -1,49 +1,202 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Card } from "@/components/ui/card";
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Link } from 'react-router-dom';
-import { ListTree, Network, AlignVerticalJustifyStart, Hash, PanelLeft, FileJson } from 'lucide-react';
+import { ListTree, Network, AlignVerticalJustifyStart, Hash, PanelLeft, FileJson, CheckCircle2, Circle } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+
+// Define problem type
+interface Problem {
+  id: number;
+  title: string;
+  slug: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+  bioinformaticsConcepts?: string[];
+}
 
 const DataStructures = () => {
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [solvedProblems, setSolvedProblems] = useState<Set<number>>(new Set());
+  
+  useEffect(() => {
+    // Load problems from localStorage
+    const storedProblems = localStorage.getItem('problems');
+    let problemsList: Problem[] = [];
+    
+    if (storedProblems) {
+      problemsList = JSON.parse(storedProblems);
+    } else {
+      // Same mock data as in ProblemList.tsx
+      problemsList = [
+        {
+          id: 1,
+          title: "DNA Sequence Alignment",
+          slug: "dna-sequence-alignment",
+          difficulty: "medium",
+          category: "dynamic-programming",
+          bioinformaticsConcepts: ["sequence-alignment", "genome-assembly"]
+        },
+        {
+          id: 2,
+          title: "Protein-Protein Interaction Network",
+          slug: "protein-protein-interaction",
+          difficulty: "hard",
+          category: "graph-algorithms",
+          bioinformaticsConcepts: ["protein-structure", "network-analysis"]
+        },
+        {
+          id: 3,
+          title: "Gene Expression Clustering",
+          slug: "gene-expression-clustering",
+          difficulty: "medium",
+          category: "tree-data-structures",
+          bioinformaticsConcepts: ["gene-expression", "phylogenetics"]
+        },
+        {
+          id: 4,
+          title: "DNA Pattern Matching",
+          slug: "dna-pattern-matching",
+          difficulty: "easy",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["sequence-alignment", "motif-finding"]
+        },
+        {
+          id: 5,
+          title: "Phylogenetic Tree Construction",
+          slug: "phylogenetic-tree",
+          difficulty: "hard",
+          category: "tree-data-structures",
+          bioinformaticsConcepts: ["phylogenetics"]
+        },
+        {
+          id: 6,
+          title: "Genome Assembly",
+          slug: "genome-assembly",
+          difficulty: "hard",
+          category: "combinatorial-algorithms",
+          bioinformaticsConcepts: ["genome-assembly", "next-gen-sequencing"]
+        },
+        {
+          id: 7,
+          title: "Motif Finding in DNA",
+          slug: "motif-finding",
+          difficulty: "medium",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["motif-finding"]
+        },
+        {
+          id: 8,
+          title: "Gene Function Prediction",
+          slug: "gene-function-prediction",
+          difficulty: "medium",
+          category: "machine-learning",
+          bioinformaticsConcepts: ["gene-expression"]
+        },
+        {
+          id: 9,
+          title: "Basic DNA Transcription",
+          slug: "basic-dna-transcription",
+          difficulty: "easy",
+          category: "search-algorithms",
+          bioinformaticsConcepts: ["sequence-alignment"]
+        },
+        {
+          id: 10,
+          title: "Protein Structure Alignment",
+          slug: "protein-structure-alignment",
+          difficulty: "hard",
+          category: "dynamic-programming",
+          bioinformaticsConcepts: ["protein-structure", "sequence-alignment"]
+        }
+      ];
+      
+      localStorage.setItem('problems', JSON.stringify(problemsList));
+    }
+    
+    setProblems(problemsList);
+    
+    // Load solved problems
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (user) {
+      const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+      const solved = new Set<number>(
+        submissions
+          .filter((s: any) => s.userId === user.id && s.status === 'accepted')
+          .map((s: any) => Number(s.problemId))
+      );
+      setSolvedProblems(solved);
+    }
+  }, []);
+
+  // Helper to get problems by data structure category
+  const getProblemsByCategory = (category: string) => {
+    return problems.filter(problem => {
+      if (category === "trees") return problem.category === "tree-data-structures";
+      if (category === "graphs") return problem.category === "graph-algorithms";
+      if (category === "arrays-strings") return ["dynamic-programming", "search-algorithms"].includes(problem.category);
+      if (category === "hash-tables") return problem.category === "search-algorithms";
+      if (category === "stacks-queues") return problem.category === "combinatorial-algorithms";
+      if (category === "advanced") return problem.category === "machine-learning";
+      return false;
+    });
+  };
+
+  // Helper to get difficulty color
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 'bg-green-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'hard': return 'bg-red-500';
+      default: return '';
+    }
+  };
+
   const dataStructures = [
     {
       title: "Trees",
       description: "Hierarchical structures including binary trees, B-trees, and phylogenetic trees used in genetic analysis",
       icon: <ListTree className="w-8 h-8 text-green-500" />,
-      link: "/data-structures/trees"
+      link: "/data-structures/trees",
+      category: "trees"
     },
     {
       title: "Graphs",
       description: "Networks and connection structures used to represent interaction networks and pathways",
       icon: <Network className="w-8 h-8 text-blue-500" />,
-      link: "/data-structures/graphs"
+      link: "/data-structures/graphs",
+      category: "graphs"
     },
     {
       title: "Arrays & Strings",
       description: "Fundamental data structures for storing sequences, DNA/RNA, and protein data",
       icon: <AlignVerticalJustifyStart className="w-8 h-8 text-purple-500" />,
-      link: "/data-structures/arrays-strings"
+      link: "/data-structures/arrays-strings",
+      category: "arrays-strings"
     },
     {
       title: "Hash Tables",
       description: "Fast lookup structures for k-mers, genetic sequences, and protein domains",
       icon: <Hash className="w-8 h-8 text-amber-500" />,
-      link: "/data-structures/hash-tables"
+      link: "/data-structures/hash-tables",
+      category: "hash-tables"
     },
     {
       title: "Stacks & Queues",
       description: "Linear structures used in algorithm implementations and biological process modeling",
       icon: <PanelLeft className="w-8 h-8 text-indigo-500" />,
-      link: "/data-structures/stacks-queues"
+      link: "/data-structures/stacks-queues",
+      category: "stacks-queues"
     },
     {
       title: "Advanced Structures",
       description: "Specialized structures like suffix trees, de Bruijn graphs, and bloom filters",
       icon: <FileJson className="w-8 h-8 text-pink-500" />,
-      link: "/data-structures/advanced"
+      link: "/data-structures/advanced",
+      category: "advanced"
     }
   ];
 
@@ -59,19 +212,57 @@ const DataStructures = () => {
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dataStructures.map((ds, index) => (
-              <Link to={ds.link} key={index}>
-                <Card className="p-6 h-full hover:shadow-md transition-all hover:border-primary/50">
+            {dataStructures.map((ds, index) => {
+              const categoryProblems = getProblemsByCategory(ds.category);
+              
+              return (
+                <Card key={index} className="p-6 h-full hover:shadow-md transition-all border">
                   <div className="flex flex-col h-full">
-                    <div className="mb-4">
+                    <div className="mb-4 flex justify-between items-center">
                       {ds.icon}
+                      <Badge variant="outline" className="text-xs">
+                        {categoryProblems.length} problems
+                      </Badge>
                     </div>
                     <h2 className="text-xl font-semibold mb-2">{ds.title}</h2>
-                    <p className="text-muted-foreground text-sm flex-grow">{ds.description}</p>
+                    <p className="text-muted-foreground text-sm mb-4">{ds.description}</p>
+                    
+                    {/* Problems list */}
+                    {categoryProblems.length > 0 ? (
+                      <div className="mt-3 space-y-2 mb-4 flex-grow">
+                        <h3 className="font-medium text-sm">Practice Problems:</h3>
+                        <ul className="space-y-2">
+                          {categoryProblems.slice(0, 3).map(problem => (
+                            <li key={problem.id} className="flex items-center gap-2 text-sm">
+                              {solvedProblems.has(problem.id) ? (
+                                <CheckCircle2 className="text-green-500 w-4 h-4 flex-shrink-0" />
+                              ) : (
+                                <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
+                              )}
+                              <span className="flex-grow truncate">{problem.title}</span>
+                              <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            </li>
+                          ))}
+                          {categoryProblems.length > 3 && (
+                            <li className="text-xs text-muted-foreground italic">
+                              + {categoryProblems.length - 3} more problems
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic mb-4 flex-grow">No problems available in this category yet.</p>
+                    )}
+                    
+                    <Link to={ds.link} className="mt-auto">
+                      <div className="bg-primary/10 hover:bg-primary/20 text-primary text-center py-2 rounded-md text-sm transition-colors">
+                        Explore {ds.title}
+                      </div>
+                    </Link>
                   </div>
                 </Card>
-              </Link>
-            ))}
+              );
+            })}
           </div>
           
           <div className="mt-12 bg-muted p-6 rounded-lg">
