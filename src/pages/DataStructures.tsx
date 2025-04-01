@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -215,7 +216,7 @@ const DataStructures = () => {
               const categoryProblems = getProblemsByCategory(ds.category);
               
               return (
-                <Link to={ds.link} key={index}>
+                <Link to={ds.link} key={index} className="block h-full">
                   <Card className="p-6 h-full hover:shadow-md transition-all border">
                     <div className="flex flex-col h-full">
                       <div className="mb-4 flex justify-between items-center">
@@ -239,7 +240,9 @@ const DataStructures = () => {
                                 ) : (
                                   <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
                                 )}
-                                <span className="flex-grow truncate">{problem.title}</span>
+                                <Link to={`/problem/${problem.slug}`} className="flex-grow truncate hover:text-primary">
+                                  {problem.title}
+                                </Link>
                                 <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
                               </li>
                             ))}

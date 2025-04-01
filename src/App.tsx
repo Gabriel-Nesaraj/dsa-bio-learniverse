@@ -11,6 +11,7 @@ import ProblemDetail from "./pages/ProblemDetail";
 import Problems from "./pages/Problems";
 import Algorithms from "./pages/Algorithms";
 import DataStructures from "./pages/DataStructures";
+import DataStructureDetail from "./pages/DataStructureDetail";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -35,6 +36,7 @@ const App = () => {
               <Route path="/problem/:slug" element={<ProblemDetail />} />
               <Route path="/algorithms" element={<Algorithms />} />
               <Route path="/data-structures" element={<DataStructures />} />
+              <Route path="/data-structures/:category" element={<DataStructureDetail />} />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
