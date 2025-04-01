@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
+import { useKeycloak } from '@/contexts/KeycloakContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import ProblemEditor from '@/components/admin/ProblemEditor';
 import ProblemViewer from '@/components/admin/ProblemViewer';
+import mongoService from '@/services/mongoService';
+import { useQuery } from '@tanstack/react-query';
 
 // Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -62,21 +63,16 @@ const adminCreationSchema = z.object({
 });
 
 const Admin = () => {
-  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useAuth();
+  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useKeycloak();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('problems');
   
   // For problem management
-  const [problems, setProblems] = useState<Problem[]>([]);
   const [problemView, setProblemView] = useState<'list' | 'view' | 'edit'>('list');
   const [selectedProblemId, setSelectedProblemId] = useState<number | null>(null);
   
   // For user management
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
-  
-  // For submissions
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   
   // For admin key (in real app, this would be environment variable)
   const adminKey = "bioadmin123"; // Example only - in production use a secure value
@@ -88,6 +84,22 @@ const Admin = () => {
       email: "",
       adminKey: ""
     },
+  });
+  
+  // Data fetching with React Query
+  const { data: problems = [], refetch: refetchProblems } = useQuery({
+    queryKey: ['problems'],
+    queryFn: () => mongoService.getProblems(),
+  });
+  
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => mongoService.getUsers(),
+  });
+  
+  const { data: submissions = [] } = useQuery({
+    queryKey: ['submissions'],
+    queryFn: () => mongoService.getSubmissions(),
   });
   
   // Update user activity to prevent progress reset
@@ -103,29 +115,7 @@ const Admin = () => {
       navigate('/');
       toast.error("You don't have permission to access this page");
     }
-    
-    // Load problems from localStorage
-    const storedProblems = localStorage.getItem('problems');
-    if (storedProblems) {
-      setProblems(JSON.parse(storedProblems));
-    }
-    
-    // Load users from localStorage
-    const storedUsers = localStorage.getItem('users');
-    if (storedUsers) {
-      const parsedUsers = JSON.parse(storedUsers).map((u: any) => {
-        const { password, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      });
-      setUsers(parsedUsers);
-    }
-    
-    // Load submissions from localStorage
-    const storedSubmissions = localStorage.getItem('submissions');
-    if (storedSubmissions) {
-      setSubmissions(JSON.parse(storedSubmissions));
-    }
-  }, [isAdmin, isLoading, navigate, updateUserActivity]);
+  }, [isAdmin, isLoading, navigate]);
   
   const selectedProblem = selectedProblemId 
     ? problems.find(p => p.id === selectedProblemId) 
@@ -149,10 +139,7 @@ const Admin = () => {
   
   const handleProblemSaved = () => {
     // Refresh problems list
-    const storedProblems = localStorage.getItem('problems');
-    if (storedProblems) {
-      setProblems(JSON.parse(storedProblems));
-    }
+    refetchProblems();
     setProblemView('list');
   };
   
@@ -168,15 +155,6 @@ const Admin = () => {
     
     const success = await makeUserAdmin(selectedUser);
     if (success) {
-      // Update local users state
-      const updatedUsers = users.map(u => {
-        if (u.id === selectedUser) {
-          return { ...u, isAdmin: true };
-        }
-        return u;
-      });
-      setUsers(updatedUsers);
-      
       toast.success("User is now an admin");
       setSelectedUser('');
     } else {
@@ -191,33 +169,20 @@ const Admin = () => {
     }
     
     // Find user by email
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find((u: any) => u.email === data.email);
+    const user = users.find(u => u.email === data.email);
     
     if (!user) {
       toast.error("User not found");
       return;
     }
     
-    // Update user to admin in localStorage
-    const updatedUsers = users.map((u: any) => {
-      if (u.email === data.email) {
-        return { ...u, isAdmin: true };
-      }
-      return u;
-    });
-    
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-    
-    // Refresh users list
-    const parsedUsers = updatedUsers.map((u: any) => {
-      const { password, ...userWithoutPassword } = u;
-      return userWithoutPassword;
-    });
-    setUsers(parsedUsers);
-    
-    toast.success(`${data.email} is now an admin`);
-    adminForm.reset();
+    const success = await makeUserAdmin(user.id);
+    if (success) {
+      toast.success(`${data.email} is now an admin`);
+      adminForm.reset();
+    } else {
+      toast.error("Failed to make user an admin");
+    }
   };
   
   if (isLoading) {

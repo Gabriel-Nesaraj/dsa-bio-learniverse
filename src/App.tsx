@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { KeycloakProvider } from "@/contexts/KeycloakContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ProblemDetail from "./pages/ProblemDetail";
@@ -27,7 +27,7 @@ const App = () => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <KeycloakProvider>
         <TooltipProvider>
           <BrowserRouter>
             <Routes>
@@ -50,7 +50,7 @@ const App = () => {
           <Toaster />
           <Sonner />
         </TooltipProvider>
-      </AuthProvider>
+      </KeycloakProvider>
     </QueryClientProvider>
   );
 };
