@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { useKeycloak } from '@/contexts/KeycloakContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ import ProblemViewer from '@/components/admin/ProblemViewer';
 import mongoService from '@/services/mongoService';
 import { useQuery } from '@tanstack/react-query';
 
-// Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Problem = {
   id: number;
@@ -56,28 +55,23 @@ type Submission = {
   timestamp: number;
 };
 
-// Schema for admin creation form
 const adminCreationSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
   adminKey: z.string().min(1, { message: "Admin key is required." })
 });
 
 const Admin = () => {
-  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useKeycloak();
+  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('problems');
   
-  // For problem management
   const [problemView, setProblemView] = useState<'list' | 'view' | 'edit'>('list');
   const [selectedProblemId, setSelectedProblemId] = useState<number | null>(null);
   
-  // For user management
   const [selectedUser, setSelectedUser] = useState<string>('');
   
-  // For admin key (in real app, this would be environment variable)
-  const adminKey = "bioadmin123"; // Example only - in production use a secure value
+  const adminKey = "bioadmin123";
   
-  // Admin creation form
   const adminForm = useForm<z.infer<typeof adminCreationSchema>>({
     resolver: zodResolver(adminCreationSchema),
     defaultValues: {
@@ -86,7 +80,6 @@ const Admin = () => {
     },
   });
   
-  // Data fetching with React Query
   const { data: problems = [], refetch: refetchProblems } = useQuery({
     queryKey: ['problems'],
     queryFn: () => mongoService.getProblems(),
@@ -102,7 +95,6 @@ const Admin = () => {
     queryFn: () => mongoService.getSubmissions(),
   });
   
-  // Update user activity to prevent progress reset
   useEffect(() => {
     if (user) {
       updateUserActivity();
@@ -110,7 +102,6 @@ const Admin = () => {
   }, [user, updateUserActivity]);
   
   useEffect(() => {
-    // Redirect if not admin
     if (!isAdmin && !isLoading) {
       navigate('/');
       toast.error("You don't have permission to access this page");
@@ -121,7 +112,6 @@ const Admin = () => {
     ? problems.find(p => p.id === selectedProblemId) 
     : null;
   
-  // Problem management functions
   const handleAddProblem = () => {
     setSelectedProblemId(null);
     setProblemView('edit');
@@ -138,7 +128,6 @@ const Admin = () => {
   };
   
   const handleProblemSaved = () => {
-    // Refresh problems list
     refetchProblems();
     setProblemView('list');
   };
@@ -168,7 +157,6 @@ const Admin = () => {
       return;
     }
     
-    // Find user by email
     const user = users.find(u => u.email === data.email);
     
     if (!user) {
@@ -190,7 +178,7 @@ const Admin = () => {
   }
   
   if (!isAdmin) {
-    return null; // This will prevent flickering before redirect
+    return null;
   }
   
   return (
@@ -223,7 +211,6 @@ const Admin = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Problems Tab */}
             <TabsContent value="problems" className="space-y-6">
               {problemView === 'list' && (
                 <>
@@ -312,7 +299,6 @@ const Admin = () => {
               )}
             </TabsContent>
             
-            {/* Users Tab */}
             <TabsContent value="users" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -434,7 +420,6 @@ const Admin = () => {
               </Card>
             </TabsContent>
             
-            {/* Submissions Tab */}
             <TabsContent value="submissions" className="space-y-6">
               <Card>
                 <CardHeader>

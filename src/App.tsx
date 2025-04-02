@@ -18,6 +18,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
+import Account from "./pages/Account"; // Import the Account component
 
 // Create a new query client instance
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/account" element={<Account />} /> {/* Add Account route */}
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />

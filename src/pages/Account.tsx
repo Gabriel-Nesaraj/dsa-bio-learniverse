@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { UserProfile, useUser } from "@clerk/clerk-react";
+import { useAuth } from "@/contexts/AuthContext"; // Use AuthContext instead of Clerk
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Account = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -31,27 +31,18 @@ const Account = () => {
                 <div className="grid gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{user?.primaryEmailAddress?.emailAddress}</p>
+                    <p className="font-medium">{user?.email}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Full Name</p>
-                    <p className="font-medium">{user?.fullName || 'Not set'}</p>
+                    <p className="font-medium">{user?.name || 'Not set'}</p>
                   </div>
                 </div>
               </Card>
               
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Edit Profile</h2>
-                <UserProfile 
-                  appearance={{
-                    elements: {
-                      card: "bg-transparent shadow-none border-0 p-0",
-                      navbar: "hidden",
-                      pageScrollBox: "p-0",
-                      formButtonPrimary: "bg-primary hover:bg-primary/90",
-                    }
-                  }}
-                />
+                <p className="text-muted-foreground">Profile editing functionality will be implemented soon.</p>
               </Card>
             </TabsContent>
             
@@ -84,16 +75,9 @@ const Account = () => {
                 <p className="text-muted-foreground">
                   Manage your account settings, including password, email, and notifications.
                 </p>
-                <UserProfile 
-                  appearance={{
-                    elements: {
-                      card: "bg-transparent shadow-none border-0 p-0",
-                      navbar: "hidden",
-                      pageScrollBox: "p-0",
-                      formButtonPrimary: "bg-primary hover:bg-primary/90",
-                    }
-                  }}
-                />
+                <div className="mt-4">
+                  <p>Account settings functionality will be implemented soon.</p>
+                </div>
               </Card>
             </TabsContent>
           </Tabs>
