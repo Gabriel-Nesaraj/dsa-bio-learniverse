@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { Card } from "@/components/ui/card";
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Link } from 'react-router-dom';
-import { ListTree, Network, AlignVerticalJustifyStart, Hash, PanelLeft, FileJson, CheckCircle2, Circle } from 'lucide-react';
+import { ListTree, Network, AlignVerticalJustifyStart, Hash, PanelLeft, FileJson, CheckCircle2, Circle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
 // Define problem type
@@ -21,6 +21,7 @@ interface Problem {
 const DataStructures = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [solvedProblems, setSolvedProblems] = useState<Set<number>>(new Set());
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
   useEffect(() => {
     // Load problems from localStorage
@@ -145,6 +146,15 @@ const DataStructures = () => {
     });
   };
 
+  // Toggle category expansion
+  const toggleCategory = (category: string) => {
+    if (expandedCategory === category) {
+      setExpandedCategory(null);
+    } else {
+      setExpandedCategory(category);
+    }
+  };
+
   // Helper to get difficulty color
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -214,51 +224,65 @@ const DataStructures = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dataStructures.map((ds, index) => {
               const categoryProblems = getProblemsByCategory(ds.category);
+              const isExpanded = expandedCategory === ds.category;
               
               return (
-                <Link to={ds.link} key={index} className="block h-full">
-                  <Card className="p-6 h-full hover:shadow-md transition-all border">
-                    <div className="flex flex-col h-full">
-                      <div className="mb-4 flex justify-between items-center">
-                        {ds.icon}
-                        <Badge variant="outline" className="text-xs">
-                          {categoryProblems.length} problems
-                        </Badge>
-                      </div>
-                      <h2 className="text-xl font-semibold mb-2">{ds.title}</h2>
-                      <p className="text-muted-foreground text-sm mb-4">{ds.description}</p>
-                      
-                      {/* Problems list */}
-                      {categoryProblems.length > 0 ? (
-                        <div className="mt-3 space-y-2 mb-4 flex-grow">
-                          <h3 className="font-medium text-sm">Practice Problems:</h3>
-                          <ul className="space-y-2">
-                            {categoryProblems.slice(0, 3).map(problem => (
-                              <li key={problem.id} className="flex items-center gap-2 text-sm">
-                                {solvedProblems.has(problem.id) ? (
-                                  <CheckCircle2 className="text-green-500 w-4 h-4 flex-shrink-0" />
-                                ) : (
-                                  <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
-                                )}
-                                <Link to={`/problem/${problem.slug}`} className="flex-grow truncate hover:text-primary">
-                                  {problem.title}
-                                </Link>
-                                <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
-                              </li>
-                            ))}
-                            {categoryProblems.length > 3 && (
-                              <li className="text-xs text-muted-foreground italic">
-                                + {categoryProblems.length - 3} more problems
-                              </li>
-                            )}
-                          </ul>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic mb-4 flex-grow">No problems available in this category yet.</p>
-                      )}
+                <Card key={index} className="p-6 h-full hover:shadow-md transition-all border">
+                  <div className="flex flex-col h-full">
+                    <div className="mb-4 flex justify-between items-center">
+                      {ds.icon}
+                      <Badge variant="outline" className="text-xs">
+                        {categoryProblems.length} problems
+                      </Badge>
                     </div>
-                  </Card>
-                </Link>
+                    <h2 className="text-xl font-semibold mb-2">{ds.title}</h2>
+                    <p className="text-muted-foreground text-sm mb-4">{ds.description}</p>
+                    
+                    <div className="flex justify-between items-center mt-auto">
+                      <Link to={ds.link} className="text-primary text-sm hover:underline">
+                        View all details
+                      </Link>
+                      
+                      <button 
+                        onClick={() => toggleCategory(ds.category)} 
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        {categoryProblems.length > 0 ? (
+                          <>
+                            Practice Problems
+                            {isExpanded ? (
+                              <ChevronDown className="ml-1 h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            )}
+                          </>
+                        ) : "No practice problems"}
+                      </button>
+                    </div>
+                    
+                    {/* Problems list - only shown when expanded */}
+                    {isExpanded && categoryProblems.length > 0 && (
+                      <div className="mt-4 space-y-2 border-t pt-4">
+                        <h3 className="font-medium text-sm">Practice Problems:</h3>
+                        <ul className="space-y-2">
+                          {categoryProblems.map(problem => (
+                            <li key={problem.id} className="flex items-center gap-2 text-sm">
+                              {solvedProblems.has(problem.id) ? (
+                                <CheckCircle2 className="text-green-500 w-4 h-4 flex-shrink-0" />
+                              ) : (
+                                <Circle className="text-muted-foreground w-4 h-4 flex-shrink-0" />
+                              )}
+                              <Link to={`/problem/${problem.slug}`} className="flex-grow truncate hover:text-primary">
+                                {problem.title}
+                              </Link>
+                              <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </Card>
               );
             })}
           </div>

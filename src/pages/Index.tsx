@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   Clock,
   BarChart3,
-  Filter
+  Filter,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import ProblemList from '@/components/problems/ProblemList';
@@ -50,6 +52,7 @@ const Index = () => {
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [problemsByCategory, setProblemsByCategory] = useState<Record<string, Problem[]>>({});
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   
   // Load problems when component mounts
   useEffect(() => {
@@ -80,6 +83,15 @@ const Index = () => {
     { id: 'network-analysis', name: 'Network Analysis' },
     { id: 'next-gen-sequencing', name: 'Next-Gen Sequencing' },
   ];
+  
+  // Toggle category expansion
+  const toggleCategory = (category: string) => {
+    if (expandedCategory === category) {
+      setExpandedCategory(null);
+    } else {
+      setExpandedCategory(category);
+    }
+  };
   
   const handleToggleConcept = (conceptId: string) => {
     setSelectedConcepts(prev => 
@@ -137,13 +149,23 @@ const Index = () => {
               <h2 className="font-semibold mb-4">Problem Categories</h2>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/problems/graph-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <Network className="w-4 h-4 text-blue-500" />
-                    <span>Graph Algorithms</span>
-                  </Link>
-                  {problemsByCategory['graph-algorithms'] && (
+                  <button 
+                    onClick={() => toggleCategory('graph-algorithms')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <Network className="w-4 h-4 text-blue-500 mr-2" />
+                      <span>Graph Algorithms</span>
+                    </div>
+                    {problemsByCategory['graph-algorithms'] && (
+                      expandedCategory === 'graph-algorithms' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'graph-algorithms' && problemsByCategory['graph-algorithms'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['graph-algorithms'].slice(0, 3).map(problem => (
+                      {problemsByCategory['graph-algorithms'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
@@ -162,13 +184,23 @@ const Index = () => {
                   )}
                 </li>
                 <li>
-                  <Link to="/problems/tree-data-structures" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <ListTree className="w-4 h-4 text-green-500" />
-                    <span>Tree Data Structures</span>
-                  </Link>
-                  {problemsByCategory['tree-data-structures'] && (
+                  <button 
+                    onClick={() => toggleCategory('tree-data-structures')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <ListTree className="w-4 h-4 text-green-500 mr-2" />
+                      <span>Tree Data Structures</span>
+                    </div>
+                    {problemsByCategory['tree-data-structures'] && (
+                      expandedCategory === 'tree-data-structures' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'tree-data-structures' && problemsByCategory['tree-data-structures'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['tree-data-structures'].slice(0, 3).map(problem => (
+                      {problemsByCategory['tree-data-structures'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
@@ -187,13 +219,23 @@ const Index = () => {
                   )}
                 </li>
                 <li>
-                  <Link to="/problems/search-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <Search className="w-4 h-4 text-purple-500" />
-                    <span>Search Algorithms</span>
-                  </Link>
-                  {problemsByCategory['search-algorithms'] && (
+                  <button 
+                    onClick={() => toggleCategory('search-algorithms')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <Search className="w-4 h-4 text-purple-500 mr-2" />
+                      <span>Search Algorithms</span>
+                    </div>
+                    {problemsByCategory['search-algorithms'] && (
+                      expandedCategory === 'search-algorithms' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'search-algorithms' && problemsByCategory['search-algorithms'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['search-algorithms'].slice(0, 3).map(problem => (
+                      {problemsByCategory['search-algorithms'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
@@ -212,13 +254,23 @@ const Index = () => {
                   )}
                 </li>
                 <li>
-                  <Link to="/problems/dynamic-programming" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <AlignLeft className="w-4 h-4 text-amber-500" />
-                    <span>Dynamic Programming</span>
-                  </Link>
-                  {problemsByCategory['dynamic-programming'] && (
+                  <button 
+                    onClick={() => toggleCategory('dynamic-programming')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <AlignLeft className="w-4 h-4 text-amber-500 mr-2" />
+                      <span>Dynamic Programming</span>
+                    </div>
+                    {problemsByCategory['dynamic-programming'] && (
+                      expandedCategory === 'dynamic-programming' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'dynamic-programming' && problemsByCategory['dynamic-programming'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['dynamic-programming'].slice(0, 3).map(problem => (
+                      {problemsByCategory['dynamic-programming'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
@@ -237,13 +289,23 @@ const Index = () => {
                   )}
                 </li>
                 <li>
-                  <Link to="/problems/machine-learning" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <GraduationCap className="w-4 h-4 text-pink-500" />
-                    <span>Machine Learning</span>
-                  </Link>
-                  {problemsByCategory['machine-learning'] && (
+                  <button 
+                    onClick={() => toggleCategory('machine-learning')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <GraduationCap className="w-4 h-4 text-pink-500 mr-2" />
+                      <span>Machine Learning</span>
+                    </div>
+                    {problemsByCategory['machine-learning'] && (
+                      expandedCategory === 'machine-learning' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'machine-learning' && problemsByCategory['machine-learning'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['machine-learning'].slice(0, 3).map(problem => (
+                      {problemsByCategory['machine-learning'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
@@ -262,13 +324,23 @@ const Index = () => {
                   )}
                 </li>
                 <li>
-                  <Link to="/problems/combinatorial-algorithms" className="flex items-center gap-2 p-2 rounded-md hover:bg-accent transition-colors">
-                    <BookOpenCheck className="w-4 h-4 text-indigo-500" />
-                    <span>Combinatorial Algorithms</span>
-                  </Link>
-                  {problemsByCategory['combinatorial-algorithms'] && (
+                  <button 
+                    onClick={() => toggleCategory('combinatorial-algorithms')}
+                    className="w-full flex items-center justify-between gap-2 p-2 rounded-md hover:bg-accent transition-colors text-left"
+                  >
+                    <div className="flex items-center">
+                      <BookOpenCheck className="w-4 h-4 text-indigo-500 mr-2" />
+                      <span>Combinatorial Algorithms</span>
+                    </div>
+                    {problemsByCategory['combinatorial-algorithms'] && (
+                      expandedCategory === 'combinatorial-algorithms' ? 
+                        <ChevronDown className="h-4 w-4" /> : 
+                        <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedCategory === 'combinatorial-algorithms' && problemsByCategory['combinatorial-algorithms'] && (
                     <ul className="ml-6 mt-1 space-y-1">
-                      {problemsByCategory['combinatorial-algorithms'].slice(0, 3).map(problem => (
+                      {problemsByCategory['combinatorial-algorithms'].map(problem => (
                         <li key={problem.id}>
                           <Link to={`/problem/${problem.slug}`} className="text-sm flex items-center gap-1 p-1 rounded-md hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors">
                             <span className={`w-2 h-2 rounded-full ${getDifficultyColor(problem.difficulty)}`}></span>
