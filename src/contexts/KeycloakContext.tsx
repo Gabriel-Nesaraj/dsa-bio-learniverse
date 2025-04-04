@@ -13,6 +13,7 @@ interface KeycloakContextType {
   logout: () => void;
   updateUserActivity: () => void;
   makeUserAdmin: (userId: string) => Promise<boolean>;
+  deleteUser: (userId: string) => Promise<boolean>;
 }
 
 const KeycloakContext = createContext<KeycloakContextType>({
@@ -24,7 +25,8 @@ const KeycloakContext = createContext<KeycloakContextType>({
   login: () => {},
   logout: () => {},
   updateUserActivity: () => {},
-  makeUserAdmin: async () => false
+  makeUserAdmin: async () => false,
+  deleteUser: async () => false
 });
 
 export const useKeycloak = () => useContext(KeycloakContext);
@@ -164,6 +166,41 @@ export const KeycloakProvider = ({ children }: { children: React.ReactNode }) =>
       return false;
     }
   };
+  
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    if (!isAdmin) {
+      console.error("Only admin users can delete users");
+      toast.error("Permission denied");
+      return false;
+    }
+    
+    try {
+      // In a real implementation, this would call the admin API
+      // For now, just mock the behavior for local storage fallback
+      if (!keycloak) {
+        // Fallback to localStorage
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const updatedUsers = users.filter((u: any) => u.id !== userId);
+        localStorage.setItem('users', JSON.stringify(updatedUsers));
+        
+        // Also clean up any submissions from this user
+        const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+        const updatedSubmissions = submissions.filter((s: any) => s.userId !== userId);
+        localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+        
+        toast.success("User deleted successfully");
+        return true;
+      }
+      
+      // In the real implementation, call the Keycloak admin API
+      toast.error("Keycloak admin API integration not implemented yet");
+      return false;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+      return false;
+    }
+  };
 
   const contextValue: KeycloakContextType = {
     keycloak,
@@ -174,7 +211,8 @@ export const KeycloakProvider = ({ children }: { children: React.ReactNode }) =>
     login,
     logout,
     updateUserActivity,
-    makeUserAdmin
+    makeUserAdmin,
+    deleteUser
   };
 
   return (

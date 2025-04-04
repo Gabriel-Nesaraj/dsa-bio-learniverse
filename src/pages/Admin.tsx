@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from "sonner";
-import { PlusCircle, UserCog, FileText, ListChecks, Shield, Eye, Edit } from 'lucide-react';
+import { PlusCircle, UserCog, FileText, ListChecks, Shield, Eye, Edit, Trash2, UserMinus } from 'lucide-react';
 import AnimatedContainer from '@/components/ui/AnimatedContainer';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +21,17 @@ import ProblemEditor from '@/components/admin/ProblemEditor';
 import ProblemViewer from '@/components/admin/ProblemViewer';
 import mongoService from '@/services/mongoService';
 import { useQuery } from '@tanstack/react-query';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 type Problem = {
@@ -61,7 +73,7 @@ const adminCreationSchema = z.object({
 });
 
 const Admin = () => {
-  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity } = useAuth();
+  const { user, isAdmin, makeUserAdmin, isLoading, updateUserActivity, deleteUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('problems');
   
@@ -69,6 +81,7 @@ const Admin = () => {
   const [selectedProblemId, setSelectedProblemId] = useState<number | null>(null);
   
   const [selectedUser, setSelectedUser] = useState<string>('');
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
   
   const adminKey = "bioadmin123";
   
@@ -85,7 +98,7 @@ const Admin = () => {
     queryFn: () => mongoService.getProblems(),
   });
   
-  const { data: users = [] } = useQuery({
+  const { data: users = [], refetch: refetchUsers } = useQuery({
     queryKey: ['users'],
     queryFn: () => mongoService.getUsers(),
   });
@@ -146,6 +159,7 @@ const Admin = () => {
     if (success) {
       toast.success("User is now an admin");
       setSelectedUser('');
+      refetchUsers();
     } else {
       toast.error("Failed to make user an admin");
     }
@@ -168,8 +182,25 @@ const Admin = () => {
     if (success) {
       toast.success(`${data.email} is now an admin`);
       adminForm.reset();
+      refetchUsers();
     } else {
       toast.error("Failed to make user an admin");
+    }
+  };
+  
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === user?.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+    
+    try {
+      await deleteUser(userId);
+      toast.success("User deleted successfully");
+      refetchUsers();
+    } catch (error) {
+      toast.error("Failed to delete user");
+      console.error("Error deleting user:", error);
     }
   };
   
@@ -398,18 +429,53 @@ const Admin = () => {
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
                           <TableHead>ID</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>{user.name}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell className={user.isAdmin ? 'text-primary font-medium' : ''}>
-                              {user.isAdmin ? 'Admin' : 'User'}
+                        {users.map((userItem) => (
+                          <TableRow key={userItem.id}>
+                            <TableCell>{userItem.name}</TableCell>
+                            <TableCell>{userItem.email}</TableCell>
+                            <TableCell className={userItem.isAdmin ? 'text-primary font-medium' : ''}>
+                              {userItem.isAdmin ? 'Admin' : 'User'}
                             </TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground">
-                              {user.id}
+                              {userItem.id}
+                            </TableCell>
+                            <TableCell>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-destructive hover:bg-destructive/10"
+                                    disabled={userItem.id === user?.id}
+                                    onClick={() => setUserToDelete(userItem.id)}
+                                  >
+                                    <UserMinus className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete the user
+                                      account and all associated data.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      className="bg-destructive hover:bg-destructive/90"
+                                      onClick={() => userToDelete && handleDeleteUser(userToDelete)}
+                                    >
+                                      Delete User
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </TableCell>
                           </TableRow>
                         ))}
