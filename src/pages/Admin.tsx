@@ -132,9 +132,17 @@ const Admin = () => {
     }
   }, [isAdmin, isLoading, navigate]);
   
-  const selectedProblem = selectedProblemId 
-    ? problems.find(p => p.id === selectedProblemId) 
+  // Find the selected problem by ID
+  const selectedProblem = selectedProblemId !== null 
+    ? problems.find((p: any) => p.id === selectedProblemId) 
     : null;
+  
+  // Debug logging for problem data
+  useEffect(() => {
+    console.log("Available problems:", problems);
+    console.log("Selected problem ID:", selectedProblemId);
+    console.log("Selected problem data:", selectedProblem);
+  }, [problems, selectedProblemId, selectedProblem]);
   
   const handleAddProblem = () => {
     setSelectedProblemId(null);
@@ -142,6 +150,7 @@ const Admin = () => {
   };
   
   const handleViewProblem = (id: number) => {
+    console.log("Viewing problem with ID:", id);
     setSelectedProblemId(id);
     setProblemView('view');
   };
@@ -293,7 +302,7 @@ const Admin = () => {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {problems.map((problem) => (
+                            {problems.map((problem: any) => (
                               <TableRow key={problem.id}>
                                 <TableCell>{problem.id}</TableCell>
                                 <TableCell>{problem.title}</TableCell>
@@ -305,7 +314,7 @@ const Admin = () => {
                                   {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                                 </TableCell>
                                 <TableCell>
-                                  {problem.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                                  {problem.category.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex gap-2">
@@ -339,7 +348,7 @@ const Admin = () => {
               
               {problemView === 'edit' && (
                 <ProblemEditor 
-                  problemId={selectedProblemId || undefined}
+                  problemId={selectedProblemId !== null ? selectedProblemId : undefined}
                   onSave={handleProblemSaved}
                   onCancel={handleProblemCancel}
                 />

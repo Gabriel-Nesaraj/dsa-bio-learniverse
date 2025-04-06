@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +60,7 @@ interface ProblemEditorProps {
 const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCancel }) => {
   const [isNewProblem, setIsNewProblem] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [problem, setProblem] = useState<Problem | null>(null);
   
   const form = useForm<z.infer<typeof problemSchema>>({
     resolver: zodResolver(problemSchema),
@@ -82,31 +84,36 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         setIsNewProblem(false);
         
         try {
+          console.log("Loading problem with ID:", problemId);
+          
           // Use mongoService to get all problems first
           const allProblems = await mongoService.getProblems();
-          const problem = allProblems.find((p: Problem) => p.id === problemId);
+          console.log("All problems:", allProblems);
           
-          if (problem) {
-            console.log("Found problem for editing:", problem);
+          const foundProblem = allProblems.find((p: Problem) => p.id === problemId);
+          
+          if (foundProblem) {
+            console.log("Found problem for editing:", foundProblem);
+            setProblem(foundProblem);
             
             // Safely process constraints - handle if they're undefined
-            const constraintsText = problem.constraints && Array.isArray(problem.constraints) 
-              ? problem.constraints.join('\n') 
+            const constraintsText = foundProblem.constraints && Array.isArray(foundProblem.constraints) 
+              ? foundProblem.constraints.join('\n') 
               : '';
             
             form.reset({
-              title: problem.title || '',
-              difficulty: problem.difficulty || 'medium',
-              category: problem.category || 'dynamic-programming',
-              description: problem.description || '',
-              exampleInput: problem.examples && problem.examples[0] ? problem.examples[0].input || '' : '',
-              exampleOutput: problem.examples && problem.examples[0] ? problem.examples[0].output || '' : '',
-              exampleExplanation: problem.examples && problem.examples[0] && problem.examples[0].explanation ? problem.examples[0].explanation : '',
+              title: foundProblem.title || '',
+              difficulty: foundProblem.difficulty || 'medium',
+              category: foundProblem.category || 'dynamic-programming',
+              description: foundProblem.description || '',
+              exampleInput: foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].input || '' : '',
+              exampleOutput: foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].output || '' : '',
+              exampleExplanation: foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '',
               constraints: constraintsText,
-              starterCodeJs: problem.starterCode && problem.starterCode.javascript ? problem.starterCode.javascript : ''
+              starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : ''
             });
           } else {
-            console.log("Problem not found with ID:", problemId);
+            console.error("Problem not found with ID:", problemId);
             toast.error("Problem not found");
           }
         } catch (error) {
@@ -116,6 +123,7 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
           setIsLoading(false);
         }
       } else {
+        console.log("Creating new problem");
         setIsNewProblem(true);
         form.reset({
           title: "",
@@ -173,12 +181,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         toast.success("Problem added successfully!");
       } else {
         // Update existing problem
-        const problems = await mongoService.getProblems();
-        const currentProblem = problems.find((p: Problem) => p.id === problemId);
-        
-        if (currentProblem) {
+        if (problem) {
           const updatedProblem = {
-            ...currentProblem,
+            ...problem,
             title: data.title,
             slug,
             difficulty: data.difficulty as Difficulty,
@@ -191,7 +196,7 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             }],
             constraints: constraintsArray,
             starterCode: { 
-              ...currentProblem.starterCode,
+              ...problem.starterCode,
               javascript: data.starterCodeJs 
             }
           };

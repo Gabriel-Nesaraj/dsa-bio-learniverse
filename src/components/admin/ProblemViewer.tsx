@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,13 @@ type Submission = {
   timestamp: number;
 };
 
+type UserData = {
+  id: string;
+  name: string;
+  email: string;
+  isAdmin?: boolean;
+};
+
 interface ProblemViewerProps {
   problem: Problem;
   onBack: () => void;
@@ -45,6 +53,7 @@ interface ProblemViewerProps {
 const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }) => {
   const [activeTab, setActiveTab] = useState('description');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   if (!problem) {
@@ -65,20 +74,25 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
   }
   
   useEffect(() => {
-    const loadSubmissions = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
+        // Load submissions
         const allSubmissions = await mongoService.getSubmissions();
         const problemSubmissions = allSubmissions.filter((s: Submission) => s.problemId === problem.id);
         setSubmissions(problemSubmissions);
+        
+        // Load users
+        const allUsers = await mongoService.getUsers();
+        setUsers(allUsers);
       } catch (error) {
-        console.error("Error loading submissions:", error);
+        console.error("Error loading data:", error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadSubmissions();
+    loadData();
   }, [problem.id]);
 
   const getDifficultyColor = (difficulty: Difficulty) => {
@@ -106,8 +120,11 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
     }
   };
   
-  console.log("ProblemViewer rendering with problem:", problem);
-  console.log("Submissions for this problem:", submissions);
+  // Find the user for a specific submission
+  const findUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.name || 'Unknown User';
+  };
   
   return (
     <div className="space-y-6">
@@ -231,41 +248,36 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
             </Card>
           ) : (
             <div className="space-y-6">
-              {submissions.map(async (submission) => {
-                const users = await mongoService.getUsers();
-                const user = users.find((u: any) => u.id === submission.userId);
-                
-                return (
-                  <Card key={submission.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <Code className="w-5 h-5 text-primary" />
-                          {user ? user.name : 'Unknown User'}
-                        </CardTitle>
-                        <div className={`px-2 py-1 rounded-full text-xs ${
-                          submission.status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {submission.status.replace('_', ' ').split(' ').map(word => 
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                          ).join(' ')}
-                        </div>
+              {submissions.map((submission) => (
+                <Card key={submission.id}>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Code className="w-5 h-5 text-primary" />
+                        {findUserName(submission.userId)}
+                      </CardTitle>
+                      <div className={`px-2 py-1 rounded-full text-xs ${
+                        submission.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {submission.status.replace('_', ' ').split(' ').map(word => 
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ')}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Submitted: {new Date(submission.timestamp).toLocaleString()}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <CodeEditor 
-                        language={submission.language}
-                        code={submission.code}
-                        readOnly={true}
-                      />
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Submitted: {new Date(submission.timestamp).toLocaleString()}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeEditor 
+                      language={submission.language}
+                      code={submission.code}
+                      readOnly={true}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </TabsContent>
