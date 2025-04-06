@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type User = {
@@ -18,7 +17,8 @@ type AuthContextType = {
   isAdmin: boolean;
   makeUserAdmin: (userId: string) => Promise<boolean>;
   upgradeToAdmin: (email: string, password: string) => Promise<boolean>;
-  updateUserActivity: () => void; // New method to update user activity
+  updateUserActivity: () => void; // Method to update user activity
+  deleteUser: (userId: string) => Promise<boolean>; // Add deleteUser method to the type
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -221,6 +221,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    if (!isAdmin) {
+      console.error("Only admin users can delete users");
+      return false;
+    }
+    
+    try {
+      // In a real app, we would call a backend API
+      // For this demo, we'll update localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const updatedUsers = users.filter((u: any) => u.id !== userId);
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      
+      // Also clean up any submissions from this user
+      const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+      const updatedSubmissions = submissions.filter((s: any) => s.userId !== userId);
+      localStorage.setItem('submissions', JSON.stringify(updatedSubmissions));
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -231,7 +256,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAdmin,
       makeUserAdmin,
       upgradeToAdmin,
-      updateUserActivity
+      updateUserActivity,
+      deleteUser
     }}>
       {children}
     </AuthContext.Provider>
