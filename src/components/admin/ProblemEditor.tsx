@@ -57,10 +57,13 @@ interface ProblemEditorProps {
   onCancel: () => void;
 }
 
+const DRAFT_STORAGE_KEY = 'problem-editor-draft';
+
 const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCancel }) => {
   const [isNewProblem, setIsNewProblem] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
   
   const form = useForm<z.infer<typeof problemSchema>>({
     resolver: zodResolver(problemSchema),
@@ -76,6 +79,68 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
     },
   });
+  
+  // Save form state to localStorage whenever it changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (value.title || value.description) {
+        // Only save non-empty drafts
+        const draftData = {
+          formData: value,
+          problemId,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        setHasDraft(true);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, problemId]);
+  
+  // Check for beforeunload event to warn user about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (form.formState.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [form.formState.isDirty]);
+  
+  // Handle visibility change to restore state when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if we need to restore from draft
+        const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (draftJson) {
+          try {
+            const draft = JSON.parse(draftJson);
+            // Only restore if it's for the same problem
+            if (draft.problemId === problemId) {
+              form.reset(draft.formData);
+              setHasDraft(true);
+              console.log("Restored draft from localStorage");
+            }
+          } catch (e) {
+            console.error("Error parsing draft data", e);
+          }
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [form, problemId]);
   
   useEffect(() => {
     const loadProblem = async () => {
@@ -101,6 +166,24 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               ? foundProblem.constraints.join('\n') 
               : '';
             
+            // Check if we have a draft first
+            const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
+            if (draftJson) {
+              try {
+                const draft = JSON.parse(draftJson);
+                // Only use draft if it's for this problem
+                if (draft.problemId === problemId) {
+                  form.reset(draft.formData);
+                  setHasDraft(true);
+                  console.log("Loaded draft for problemId:", problemId);
+                  return; // Skip loading from server data
+                }
+              } catch (e) {
+                console.error("Error parsing draft data", e);
+              }
+            }
+            
+            // If no usable draft, load from server data
             form.reset({
               title: foundProblem.title || '',
               difficulty: foundProblem.difficulty || 'medium',
@@ -112,6 +195,7 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               constraints: constraintsText,
               starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : ''
             });
+            
           } else {
             console.error("Problem not found with ID:", problemId);
             toast.error("Problem not found");
@@ -125,6 +209,25 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       } else {
         console.log("Creating new problem");
         setIsNewProblem(true);
+        
+        // Check if there's a draft for a new problem
+        const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (draftJson) {
+          try {
+            const draft = JSON.parse(draftJson);
+            // Only use draft if it's for a new problem (no problemId)
+            if (!draft.problemId) {
+              form.reset(draft.formData);
+              setHasDraft(true);
+              console.log("Loaded draft for new problem");
+              return; // Skip loading defaults
+            }
+          } catch (e) {
+            console.error("Error parsing draft data", e);
+          }
+        }
+        
+        // If no usable draft, use defaults
         form.reset({
           title: "",
           difficulty: "medium",
@@ -208,6 +311,10 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         }
       }
       
+      // Clear the draft after successful save
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasDraft(false);
+      
       // Reset form and notify parent component
       form.reset();
       onSave();
@@ -228,6 +335,11 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       try {
         await mongoService.deleteProblem(problemId);
         toast.success("Problem deleted successfully!");
+        
+        // Clear any drafts related to this problem
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+        setHasDraft(false);
+        
         onCancel();
       } catch (error) {
         console.error("Error deleting problem:", error);
@@ -238,18 +350,79 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
     }
   };
   
+  const handleCancel = () => {
+    if (form.formState.isDirty && !window.confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+      return;
+    }
+    
+    // Clear the draft when explicitly canceling
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setHasDraft(false);
+    
+    onCancel();
+  };
+  
+  const discardDraft = () => {
+    if (window.confirm("Are you sure you want to discard your draft?")) {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasDraft(false);
+      
+      // Reload the problem data
+      if (problemId && problem) {
+        const constraintsText = problem.constraints && Array.isArray(problem.constraints) 
+          ? problem.constraints.join('\n') 
+          : '';
+        
+        form.reset({
+          title: problem.title || '',
+          difficulty: problem.difficulty || 'medium',
+          category: problem.category || 'dynamic-programming',
+          description: problem.description || '',
+          exampleInput: problem.examples && problem.examples[0] ? problem.examples[0].input || '' : '',
+          exampleOutput: problem.examples && problem.examples[0] ? problem.examples[0].output || '' : '',
+          exampleExplanation: problem.examples && problem.examples[0] && problem.examples[0].explanation ? problem.examples[0].explanation : '',
+          constraints: constraintsText,
+          starterCodeJs: problem.starterCode && problem.starterCode.javascript ? problem.starterCode.javascript : ''
+        });
+      } else {
+        // Reset to defaults for new problem
+        form.reset({
+          title: "",
+          difficulty: "medium",
+          category: "dynamic-programming",
+          description: "",
+          exampleInput: "",
+          exampleOutput: "",
+          exampleExplanation: "",
+          constraints: "",
+          starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
+        });
+      }
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">{isNewProblem ? 'Add New Problem' : 'Edit Problem'}</h2>
         <div className="flex gap-2">
+          {hasDraft && (
+            <div className="flex items-center">
+              <span className="text-amber-600 text-sm mr-2">
+                Unsaved draft
+              </span>
+              <Button variant="outline" size="sm" onClick={discardDraft}>
+                Discard draft
+              </Button>
+            </div>
+          )}
           {!isNewProblem && (
             <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
               <Trash className="w-4 h-4 mr-2" />
               Delete
             </Button>
           )}
-          <Button variant="outline" onClick={onCancel} disabled={isLoading}>Cancel</Button>
+          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>Cancel</Button>
         </div>
       </div>
       
