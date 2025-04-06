@@ -151,17 +151,18 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         try {
           console.log("Loading problem with ID:", problemId);
           
-          // Use mongoService to get all problems first
-          const allProblems = await mongoService.getProblems();
-          console.log("All problems:", allProblems);
+          // Directly fetch the specific problem
+          const problems = await mongoService.getProblems();
+          console.log("All problems:", problems);
           
-          const foundProblem = allProblems.find((p: Problem) => p.id === problemId);
+          // Find the problem with the matching ID
+          const foundProblem = problems.find((p: Problem) => p.id === problemId);
           
           if (foundProblem) {
             console.log("Found problem for editing:", foundProblem);
             setProblem(foundProblem);
             
-            // Safely process constraints - handle if they're undefined
+            // Process constraints array to string
             const constraintsText = foundProblem.constraints && Array.isArray(foundProblem.constraints) 
               ? foundProblem.constraints.join('\n') 
               : '';
@@ -176,6 +177,7 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
                   form.reset(draft.formData);
                   setHasDraft(true);
                   console.log("Loaded draft for problemId:", problemId);
+                  setIsLoading(false);
                   return; // Skip loading from server data
                 }
               } catch (e) {
@@ -184,6 +186,8 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             }
             
             // If no usable draft, load from server data
+            console.log("Setting form values from problem:", foundProblem);
+            
             form.reset({
               title: foundProblem.title || '',
               difficulty: foundProblem.difficulty || 'medium',
@@ -193,8 +197,19 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               exampleOutput: foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].output || '' : '',
               exampleExplanation: foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '',
               constraints: constraintsText,
-              starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : ''
+              starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '',
             });
+            
+            // Force update form values if they're not being set properly
+            form.setValue('title', foundProblem.title || '');
+            form.setValue('difficulty', foundProblem.difficulty || 'medium');
+            form.setValue('category', foundProblem.category || 'dynamic-programming');
+            form.setValue('description', foundProblem.description || '');
+            form.setValue('exampleInput', foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].input || '' : '');
+            form.setValue('exampleOutput', foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].output || '' : '');
+            form.setValue('exampleExplanation', foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '');
+            form.setValue('constraints', constraintsText);
+            form.setValue('starterCodeJs', foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '');
             
           } else {
             console.error("Problem not found with ID:", problemId);
@@ -244,6 +259,11 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
     
     loadProblem();
   }, [problemId, form]);
+
+  // Debug log to show current form values
+  useEffect(() => {
+    console.log("Current form values:", form.getValues());
+  }, [form]);
   
   const handleSubmit = async (data: z.infer<typeof problemSchema>) => {
     console.log("Submitting form with data:", data);

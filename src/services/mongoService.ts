@@ -50,6 +50,83 @@ export class MongoService {
     if (options.method === 'GET' || !options.method) {
       // GET request
       const data = localStorage.getItem(collection);
+      if (collection === 'problems') {
+        // Create sample data for problems if none exists
+        if (!data || JSON.parse(data).length === 0) {
+          const sampleProblems = [
+            {
+              id: 1,
+              title: "DNA Sequence Alignment",
+              slug: "dna-sequence-alignment",
+              difficulty: "medium",
+              category: "dynamic-programming",
+              description: "Given two DNA sequences, find the optimal alignment that minimizes the number of mismatches and gaps.",
+              examples: [
+                {
+                  input: "ACGTACGT\nACGGACGT",
+                  output: "2",
+                  explanation: "There are 2 operations needed: 1 insertion and 1 substitution."
+                }
+              ],
+              constraints: [
+                "1 <= sequence length <= 1000",
+                "Sequences contain only A, C, G, T characters"
+              ],
+              starterCode: {
+                javascript: "function alignSequences(seq1, seq2) {\n  // Your code here\n  return minimumOperations;\n}"
+              }
+            },
+            {
+              id: 2,
+              title: "Protein Folding Prediction",
+              slug: "protein-folding-prediction",
+              difficulty: "hard",
+              category: "combinatorial-algorithms",
+              description: "Implement a simple algorithm to predict the 2D folding structure of a protein sequence using a hydrophobic-polar model.",
+              examples: [
+                {
+                  input: "HPHPPHHPHPPHPHHPPHPH",
+                  output: "9",
+                  explanation: "The maximum number of H-H contacts possible is 9."
+                }
+              ],
+              constraints: [
+                "5 <= sequence length <= 100",
+                "Sequence contains only H (hydrophobic) and P (polar) characters"
+              ],
+              starterCode: {
+                javascript: "function predictFolding(sequence) {\n  // Your code here\n  return maxContacts;\n}"
+              }
+            },
+            {
+              id: 3,
+              title: "Gene Expression Clustering",
+              slug: "gene-expression-clustering",
+              difficulty: "medium",
+              category: "machine-learning",
+              description: "Implement a k-means clustering algorithm to group genes with similar expression patterns across multiple experiments.",
+              examples: [
+                {
+                  input: "3\n5\n1.2,2.3,3.1,4.5,1.0\n5.6,4.2,3.7,2.1,6.0\n2.3,1.8,3.5,4.2,2.0\n7.1,6.5,5.9,8.2,7.0",
+                  output: "[[0,2],[1,3]]",
+                  explanation: "Genes 0 and 2 form one cluster, and genes 1 and 3 form another."
+                }
+              ],
+              constraints: [
+                "2 <= k <= 10",
+                "2 <= number of genes <= 100",
+                "1 <= number of experiments <= 20"
+              ],
+              starterCode: {
+                javascript: "function clusterGenes(k, geneExpressions) {\n  // Your code here\n  return clusters;\n}"
+              }
+            }
+          ];
+          localStorage.setItem('problems', JSON.stringify(sampleProblems));
+          return sampleProblems as unknown as T;
+        }
+      }
+      
       return data ? JSON.parse(data) : [];
     } else if (options.method === 'POST' && options.body) {
       // POST request - Add new item
