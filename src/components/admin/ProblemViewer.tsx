@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Edit, Trash, Code } from 'lucide-react';
 import { toast } from "sonner";
 import CodeEditor from '@/components/problems/CodeEditor';
+import mongoService from '@/services/mongoService';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -45,8 +45,8 @@ interface ProblemViewerProps {
 const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }) => {
   const [activeTab, setActiveTab] = useState('description');
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Add null check for problem
   if (!problem) {
     console.error("Problem is undefined in ProblemViewer");
     return (
@@ -64,14 +64,21 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
     );
   }
   
-  // Load submissions for this problem
   useEffect(() => {
-    const storedSubmissions = localStorage.getItem('submissions');
-    if (storedSubmissions) {
-      const allSubmissions = JSON.parse(storedSubmissions);
-      const problemSubmissions = allSubmissions.filter((s: Submission) => s.problemId === problem.id);
-      setSubmissions(problemSubmissions);
-    }
+    const loadSubmissions = async () => {
+      setIsLoading(true);
+      try {
+        const allSubmissions = await mongoService.getSubmissions();
+        const problemSubmissions = allSubmissions.filter((s: Submission) => s.problemId === problem.id);
+        setSubmissions(problemSubmissions);
+      } catch (error) {
+        console.error("Error loading submissions:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSubmissions();
   }, [problem.id]);
 
   const getDifficultyColor = (difficulty: Difficulty) => {
@@ -83,21 +90,22 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
     }
   };
   
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this problem? This action cannot be undone.")) {
-      const storedProblems = localStorage.getItem('problems');
-      if (storedProblems) {
-        const problems = JSON.parse(storedProblems);
-        const updatedProblems = problems.filter((p: Problem) => p.id !== problem.id);
-        localStorage.setItem('problems', JSON.stringify(updatedProblems));
-        
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to delete this problem? This action cannot be undone.")) {
+      setIsLoading(true);
+      try {
+        await mongoService.deleteProblem(problem.id);
         toast.success("Problem deleted successfully!");
         onBack();
+      } catch (error) {
+        console.error("Error deleting problem:", error);
+        toast.error("Failed to delete problem");
+      } finally {
+        setIsLoading(false);
       }
     }
   };
   
-  // Using console.log to debug
   console.log("ProblemViewer rendering with problem:", problem);
   console.log("Submissions for this problem:", submissions);
   
@@ -113,7 +121,7 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
             <Edit className="w-4 h-4 mr-2" />
             Edit Problem
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
+          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
             <Trash className="w-4 h-4 mr-2" />
             Delete Problem
           </Button>
@@ -211,7 +219,11 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
         </TabsContent>
         
         <TabsContent value="solutions" className="space-y-6 pt-4">
-          {submissions.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center p-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : submissions.length === 0 ? (
             <Card>
               <CardContent className="py-8">
                 <p className="text-center text-muted-foreground">No solutions submitted for this problem yet.</p>
@@ -219,10 +231,8 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
             </Card>
           ) : (
             <div className="space-y-6">
-              {submissions.map((submission) => {
-                // Get user information
-                const usersString = localStorage.getItem('users');
-                const users = usersString ? JSON.parse(usersString) : [];
+              {submissions.map(async (submission) => {
+                const users = await mongoService.getUsers();
                 const user = users.find((u: any) => u.id === submission.userId);
                 
                 return (

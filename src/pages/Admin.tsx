@@ -93,17 +93,28 @@ const Admin = () => {
     },
   });
   
-  const { data: problems = [], refetch: refetchProblems } = useQuery({
+  const { 
+    data: problems = [], 
+    refetch: refetchProblems,
+    isLoading: problemsLoading
+  } = useQuery({
     queryKey: ['problems'],
     queryFn: () => mongoService.getProblems(),
   });
   
-  const { data: users = [], refetch: refetchUsers } = useQuery({
+  const { 
+    data: users = [], 
+    refetch: refetchUsers,
+    isLoading: usersLoading
+  } = useQuery({
     queryKey: ['users'],
     queryFn: () => mongoService.getUsers(),
   });
   
-  const { data: submissions = [] } = useQuery({
+  const { 
+    data: submissions = [],
+    isLoading: submissionsLoading
+  } = useQuery({
     queryKey: ['submissions'],
     queryFn: () => mongoService.getSubmissions(),
   });
@@ -136,6 +147,7 @@ const Admin = () => {
   };
   
   const handleEditProblem = (id: number) => {
+    console.log("Editing problem with ID:", id);
     setSelectedProblemId(id);
     setProblemView('edit');
   };
@@ -261,7 +273,11 @@ const Admin = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {problems.length === 0 ? (
+                      {problemsLoading ? (
+                        <div className="flex justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      ) : problems.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           No problems added yet
                         </div>
