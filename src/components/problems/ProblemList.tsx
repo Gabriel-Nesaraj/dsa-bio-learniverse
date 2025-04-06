@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, Circle, Code, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import mongoService from '@/services/mongoService';
 
 // Define types for our problems
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -32,122 +34,48 @@ const ProblemList: React.FC<ProblemListProps> = ({
   concepts = [],
   difficulties = []
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [solvedProblems, setSolvedProblems] = useState<Set<number>>(new Set());
+  const [submissionsCount, setSubmissionsCount] = useState<Map<number, number>>(new Map());
   
   useEffect(() => {
-    // Load problems from localStorage, or use mock data if none exists
-    const storedProblems = localStorage.getItem('problems');
-    let problemsList: Problem[] = [];
-    
-    if (storedProblems) {
-      problemsList = JSON.parse(storedProblems);
-    } else {
-      // Mock data for problems - in a real app, this would come from an API
-      problemsList = [
-        {
-          id: 1,
-          title: "DNA Sequence Alignment",
-          slug: "dna-sequence-alignment",
-          difficulty: "medium",
-          category: "dynamic-programming",
-          bioinformaticsConcepts: ["sequence-alignment", "genome-assembly"]
-        },
-        {
-          id: 2,
-          title: "Protein-Protein Interaction Network",
-          slug: "protein-protein-interaction",
-          difficulty: "hard",
-          category: "graph-algorithms",
-          bioinformaticsConcepts: ["protein-structure", "network-analysis"]
-        },
-        {
-          id: 3,
-          title: "Gene Expression Clustering",
-          slug: "gene-expression-clustering",
-          difficulty: "medium",
-          category: "tree-data-structures",
-          bioinformaticsConcepts: ["gene-expression", "phylogenetics"]
-        },
-        {
-          id: 4,
-          title: "DNA Pattern Matching",
-          slug: "dna-pattern-matching",
-          difficulty: "easy",
-          category: "search-algorithms",
-          bioinformaticsConcepts: ["sequence-alignment", "motif-finding"]
-        },
-        {
-          id: 5,
-          title: "Phylogenetic Tree Construction",
-          slug: "phylogenetic-tree",
-          difficulty: "hard",
-          category: "tree-data-structures",
-          bioinformaticsConcepts: ["phylogenetics"]
-        },
-        {
-          id: 6,
-          title: "Genome Assembly",
-          slug: "genome-assembly",
-          difficulty: "hard",
-          category: "combinatorial-algorithms",
-          bioinformaticsConcepts: ["genome-assembly", "next-gen-sequencing"]
-        },
-        {
-          id: 7,
-          title: "Motif Finding in DNA",
-          slug: "motif-finding",
-          difficulty: "medium",
-          category: "search-algorithms",
-          bioinformaticsConcepts: ["motif-finding"]
-        },
-        {
-          id: 8,
-          title: "Gene Function Prediction",
-          slug: "gene-function-prediction",
-          difficulty: "medium",
-          category: "machine-learning",
-          bioinformaticsConcepts: ["gene-expression"]
-        },
-        {
-          id: 9,
-          title: "Basic DNA Transcription",
-          slug: "basic-dna-transcription",
-          difficulty: "easy",
-          category: "search-algorithms",
-          bioinformaticsConcepts: ["sequence-alignment"]
-        },
-        {
-          id: 10,
-          title: "Protein Structure Alignment",
-          slug: "protein-structure-alignment",
-          difficulty: "hard",
-          category: "dynamic-programming",
-          bioinformaticsConcepts: ["protein-structure", "sequence-alignment"]
-        }
-      ];
+    const loadData = async () => {
+      // Load problems from MongoDB service
+      const loadedProblems = await mongoService.getProblems();
+      setProblems(loadedProblems);
       
-      // Save to localStorage for future
-      localStorage.setItem('problems', JSON.stringify(problemsList));
-    }
+      // Load submissions for stats if user is admin
+      if (isAdmin) {
+        const allSubmissions = await mongoService.getSubmissions();
+        
+        // Count submissions per problem
+        const submissionCountMap = new Map<number, number>();
+        allSubmissions.forEach((sub: any) => {
+          const count = submissionCountMap.get(sub.problemId) || 0;
+          submissionCountMap.set(sub.problemId, count + 1);
+        });
+        
+        setSubmissionsCount(submissionCountMap);
+      }
+      
+      // Load solved problems for current user
+      if (user) {
+        const submissions = await mongoService.getSubmissions();
+        // Create a Set of problem IDs that the user has solved
+        const solved = new Set<number>(
+          submissions
+            .filter((s: any) => s.userId === user.id && s.status === 'accepted')
+            .map((s: any) => Number(s.problemId))
+        );
+        setSolvedProblems(solved);
+      } else {
+        setSolvedProblems(new Set<number>());
+      }
+    };
     
-    setProblems(problemsList);
-    
-    // Load solved problems for current user
-    if (user) {
-      const submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
-      // Create a Set of problem IDs that the user has solved
-      const solved = new Set<number>(
-        submissions
-          .filter((s: any) => s.userId === user.id && s.status === 'accepted')
-          .map((s: any) => Number(s.problemId))
-      );
-      setSolvedProblems(solved);
-    } else {
-      setSolvedProblems(new Set<number>());
-    }
-  }, [user]);
+    loadData();
+  }, [user, isAdmin]);
   
   // Filter problems based on props
   const filteredProblems = problems.filter(problem => {
@@ -189,8 +117,9 @@ const ProblemList: React.FC<ProblemListProps> = ({
       <div className="grid grid-cols-12 font-medium text-sm text-muted-foreground px-4 py-2 border-b">
         <div className="col-span-1 flex justify-center">Status</div>
         <div className="col-span-6">Title</div>
-        <div className="col-span-3">Category</div>
+        <div className="col-span-2">Category</div>
         <div className="col-span-2">Difficulty</div>
+        {isAdmin && <div className="col-span-1">Actions</div>}
       </div>
       
       {filteredProblems.length === 0 ? (
@@ -201,7 +130,7 @@ const ProblemList: React.FC<ProblemListProps> = ({
         <ul>
           {filteredProblems.map((problem) => (
             <li key={problem.id} className="border-b last:border-b-0 hover:bg-muted/50 transition-colors">
-              <Link to={`/problem/${problem.slug}`} className="grid grid-cols-12 px-4 py-3 items-center">
+              <div className="grid grid-cols-12 px-4 py-3 items-center">
                 <div className="col-span-1 flex justify-center">
                   {solvedProblems.has(problem.id) ? (
                     <CheckCircle2 className="text-green-500 w-5 h-5" />
@@ -210,15 +139,27 @@ const ProblemList: React.FC<ProblemListProps> = ({
                   )}
                 </div>
                 <div className="col-span-6 font-medium">
-                  {problem.title}
+                  <Link to={`/problem/${problem.slug}`} className="hover:underline">
+                    {problem.title}
+                  </Link>
                 </div>
-                <div className="col-span-3 text-sm text-muted-foreground">
+                <div className="col-span-2 text-sm text-muted-foreground">
                   {problem.category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                 </div>
                 <div className={cn("col-span-2 text-sm", getDifficultyColor(problem.difficulty))}>
                   {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
                 </div>
-              </Link>
+                {isAdmin && (
+                  <div className="col-span-1 flex gap-2">
+                    <Link to={`/admin?tab=problems&view=view&id=${problem.id}`}>
+                      <Button variant="outline" size="sm" className="flex items-center gap-1">
+                        <Code className="w-3 h-3" />
+                        <span className="text-xs">{submissionsCount.get(problem.id) || 0}</span>
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </li>
           ))}
         </ul>

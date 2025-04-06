@@ -77,9 +77,9 @@ const ProblemViewer: React.FC<ProblemViewerProps> = ({ problem, onBack, onEdit }
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Load submissions
-        const allSubmissions = await mongoService.getSubmissions();
-        const problemSubmissions = allSubmissions.filter((s: Submission) => s.problemId === problem.id);
+        // Load submissions for this specific problem using the new method
+        const problemSubmissions = await mongoService.getSubmissionsByProblemId(problem.id);
+        console.log(`Loaded ${problemSubmissions.length} submissions for problem ${problem.id}`);
         setSubmissions(problemSubmissions);
         
         // Load users

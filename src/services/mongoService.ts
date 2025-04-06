@@ -210,6 +210,13 @@ export class MongoService {
     return this.request<any[]>('submissions');
   }
   
+  async getSubmissionsByProblemId(problemId: number) {
+    const allSubmissions = await this.getSubmissions();
+    return allSubmissions.filter((submission: any) => 
+      submission.problemId === problemId
+    );
+  }
+  
   async createSubmission(submission: any) {
     return this.request<any>('submissions', {
       method: 'POST',
