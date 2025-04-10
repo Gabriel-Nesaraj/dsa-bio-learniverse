@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -8,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle2, Clock, BarChart3, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, BarChart3, AlertCircle, Code } from 'lucide-react';
 import CodeEditor from '@/components/problems/CodeEditor';
 import ProblemDescription from '@/components/problems/ProblemDescription';
 import TestCases from '@/components/problems/TestCases';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
+import mongoService from '@/services/mongoService';
 
 const SUPPORTED_LANGUAGES = [
   { id: 'cpp', name: 'C++' },
@@ -30,7 +30,6 @@ const SUPPORTED_LANGUAGES = [
   { id: 'typescript', name: 'TypeScript' },
 ];
 
-// Default problem data to use when none is available
 const DEFAULT_PROBLEM = {
   id: 1,
   title: "DNA Pattern Matching",
@@ -107,7 +106,7 @@ class Solution {
 
 const ProblemDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('description');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
@@ -116,6 +115,8 @@ const ProblemDetail = () => {
   const [problem, setProblem] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [allProblems, setAllProblems] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [solutionsLoading, setSolutionsLoading] = useState(false);
 
   useEffect(() => {
     const loadProblem = () => {
@@ -131,14 +132,12 @@ const ProblemDetail = () => {
           if (currentProblem) {
             setProblem(currentProblem);
           } else {
-            // If no problem found with that slug, set the default problem
             setProblem({
               ...DEFAULT_PROBLEM,
               slug: slug
             });
           }
         } else {
-          // If no problems in localStorage, set the default problem
           setProblem({
             ...DEFAULT_PROBLEM,
             slug: slug
@@ -146,7 +145,6 @@ const ProblemDetail = () => {
         }
       } catch (error) {
         console.error('Error loading problem:', error);
-        // Fallback to default problem data
         setProblem({
           ...DEFAULT_PROBLEM,
           slug: slug
@@ -163,7 +161,6 @@ const ProblemDetail = () => {
     if (problem?.starterCode && problem.starterCode[selectedLanguage]) {
       setUserCode(problem.starterCode[selectedLanguage]);
     } else if (problem) {
-      // Fallback if the specific language starter code is missing
       setUserCode(`// No starter code available for ${selectedLanguage}`);
     }
   }, [selectedLanguage, problem]);
@@ -216,6 +213,26 @@ const ProblemDetail = () => {
     }, 2000);
   };
 
+  useEffect(() => {
+    const loadSubmissions = async () => {
+      if (isAdmin && problem?.id) {
+        setSolutionsLoading(true);
+        try {
+          const problemSubmissions = await mongoService.getSubmissionsByProblemId(problem.id);
+          setSubmissions(problemSubmissions);
+        } catch (error) {
+          console.error("Error loading submissions:", error);
+        } finally {
+          setSolutionsLoading(false);
+        }
+      }
+    };
+
+    if (isAdmin && problem?.id) {
+      loadSubmissions();
+    }
+  }, [isAdmin, problem]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -252,7 +269,6 @@ const ProblemDetail = () => {
     );
   }
 
-  // Provide defaults for any missing data in the problem
   const examples = problem.examples || [];
   const constraints = problem.constraints || [];
 
@@ -336,13 +352,58 @@ const ProblemDetail = () => {
               </TabsContent>
               
               <TabsContent value="solutions" className="p-6 m-0">
-                <div className="text-center py-12">
-                  <h3 className="font-medium mb-2">Solutions are locked</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Try solving the problem first before viewing the solution.
-                  </p>
-                  <Button variant="outline">Unlock Solution</Button>
-                </div>
+                {isAdmin ? (
+                  <div className="space-y-6">
+                    <h3 className="font-medium text-lg">Submitted Solutions</h3>
+                    {solutionsLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : submissions.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">
+                        No solutions submitted for this problem yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {submissions.map((submission) => (
+                          <Card key={submission.id} className="overflow-hidden">
+                            <div className="bg-muted p-3 flex justify-between items-center border-b">
+                              <div>
+                                <p className="font-medium">User: {submission.userId}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(submission.timestamp).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className={`px-2 py-1 rounded-full text-xs ${
+                                submission.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {submission.status.replace('_', ' ').split(' ').map((word: string) => 
+                                  word.charAt(0).toUpperCase() + word.slice(1)
+                                ).join(' ')}
+                              </div>
+                            </div>
+                            <div className="p-0">
+                              <CodeEditor
+                                language={submission.language}
+                                code={submission.code}
+                                readOnly={true}
+                              />
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <h3 className="font-medium mb-2">Solutions are locked</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Try solving the problem first before viewing the solution.
+                    </p>
+                    <Button variant="outline">Unlock Solution</Button>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </Card>
