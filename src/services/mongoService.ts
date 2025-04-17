@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 // MongoDB service for interacting with our backend API
@@ -168,48 +167,6 @@ export class MongoService {
         ];
         localStorage.setItem('problems', JSON.stringify(sampleProblems));
         return sampleProblems as unknown as T;
-      } else if (collection === 'users' && (!data || JSON.parse(data).length === 0)) {
-        // Create sample users if none exists
-        const sampleUsers = [
-          {
-            id: "user1",
-            name: "Admin User",
-            email: "admin@example.com",
-            isAdmin: true
-          },
-          {
-            id: "user2",
-            name: "Regular User",
-            email: "user@example.com",
-            isAdmin: false
-          }
-        ];
-        localStorage.setItem('users', JSON.stringify(sampleUsers));
-        return sampleUsers as unknown as T;
-      } else if (collection === 'submissions' && (!data || JSON.parse(data).length === 0)) {
-        // Create sample submissions if none exists
-        const sampleSubmissions = [
-          {
-            id: "sub1",
-            userId: "user2",
-            problemId: 1,
-            code: "function alignSequences(seq1, seq2) {\n  return seq1.length - seq2.length;\n}",
-            language: "javascript",
-            status: "wrong_answer",
-            timestamp: Date.now() - 86400000 // 1 day ago
-          },
-          {
-            id: "sub2",
-            userId: "user2",
-            problemId: 1,
-            code: "function alignSequences(seq1, seq2) {\n  // Dynamic programming solution\n  return 2;\n}",
-            language: "javascript",
-            status: "accepted",
-            timestamp: Date.now() - 43200000 // 12 hours ago
-          }
-        ];
-        localStorage.setItem('submissions', JSON.stringify(sampleSubmissions));
-        return sampleSubmissions as unknown as T;
       }
       
       // Handle ID or slug-based requests
@@ -220,7 +177,8 @@ export class MongoService {
         // Get by ID
         const id = idMatch[1];
         const items = data ? JSON.parse(data) : [];
-        const item = items.find((item: any) => item.id.toString() === id);
+        const item = items.find((item: any) => String(item.id) === String(id));
+        console.log(`Looking for item with ID: ${id}, found:`, item);
         return item as unknown as T;
       } else if (slugMatch) {
         // Get by slug
@@ -282,7 +240,13 @@ export class MongoService {
   
   // Problems
   async getProblems() {
+    console.log("Fetching all problems");
     return this.request<any[]>('problems');
+  }
+  
+  async getProblemById(id: number) {
+    console.log(`Fetching problem with ID: ${id}`);
+    return this.request<any>(`problems/${id}`);
   }
   
   async getProblemBySlug(slug: string) {

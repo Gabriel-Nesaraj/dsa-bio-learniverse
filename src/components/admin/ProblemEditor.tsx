@@ -143,6 +143,8 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
   }, [form, problemId]);
   
   useEffect(() => {
+    console.log("ProblemEditor mounted with problemId:", problemId);
+    
     const loadProblem = async () => {
       if (problemId) {
         setIsLoading(true);
@@ -151,9 +153,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         try {
           console.log("Loading problem with ID:", problemId);
           
-          // Fetch all problems first
+          // Fetch problem directly from MongoDB service
           const problems = await mongoService.getProblems();
-          console.log("All problems fetched:", problems);
+          console.log("All problems:", problems);
           
           if (!Array.isArray(problems)) {
             console.error("Expected array of problems but got:", typeof problems);
@@ -162,9 +164,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             return;
           }
           
-          // Find the problem with the matching ID
+          // Find the problem with matching ID
           const foundProblem = problems.find(p => p.id === problemId);
-          console.log("Found problem for ID", problemId, ":", foundProblem);
+          console.log("Found problem:", foundProblem);
           
           if (foundProblem) {
             setProblem(foundProblem);
@@ -193,8 +195,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             }
             
             // If no usable draft, load from server data
-            console.log("Setting form values from problem:", foundProblem);
-            
             const formValues = {
               title: foundProblem.title || '',
               difficulty: foundProblem.difficulty || 'medium',
@@ -207,15 +207,17 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '',
             };
             
-            console.log("Form values to set:", formValues);
+            console.log("Setting form values:", formValues);
+            
+            // Reset the form with the values
             form.reset(formValues);
             
-            // Force update form values to ensure they are set properly
+            // Force set values to ensure they're properly applied
             Object.entries(formValues).forEach(([key, value]) => {
               form.setValue(key as any, value);
             });
             
-            console.log("Form values after reset:", form.getValues());
+            console.log("After setting, form values are:", form.getValues());
           } else {
             console.error("Problem not found with ID:", problemId);
             toast.error("Problem not found");

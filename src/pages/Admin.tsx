@@ -348,7 +348,7 @@ const Admin = () => {
               
               {problemView === 'edit' && (
                 <ProblemEditor 
-                  problemId={selectedProblemId}
+                  problemId={selectedProblemId !== null ? selectedProblemId : undefined}
                   onSave={handleProblemSaved}
                   onCancel={handleProblemCancel}
                 />
