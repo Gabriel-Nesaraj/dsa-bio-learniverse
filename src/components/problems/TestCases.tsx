@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, CheckCircle, XCircle } from 'lucide-react';
 
@@ -14,24 +14,46 @@ interface TestCase {
 interface TestCasesProps {
   code: string;
   language: string;
+  problemData?: {
+    testCases?: {
+      id: number;
+      input: string;
+      expected: string;
+    }[];
+  };
 }
 
-const TestCases: React.FC<TestCasesProps> = ({ code, language }) => {
+const TestCases: React.FC<TestCasesProps> = ({ code, language, problemData }) => {
   // State to track test cases
-  const [testCases, setTestCases] = useState<TestCase[]>([
-    {
-      id: 1,
-      input: 'seq1: "ACGTACGT", seq2: "ACGTCT"',
-      expected: 'Score: 3, Aligned sequences shown in description',
-      status: 'idle'
-    },
-    {
-      id: 2,
-      input: 'seq1: "ATTGCC", seq2: "ATGGCT"',
-      expected: 'Score: 1, Appropriate alignment',
-      status: 'idle'
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+
+  // Initialize test cases from problem data or use defaults
+  useEffect(() => {
+    if (problemData?.testCases && problemData.testCases.length > 0) {
+      setTestCases(
+        problemData.testCases.map(tc => ({
+          ...tc,
+          status: 'idle'
+        }))
+      );
+    } else {
+      // Default test cases if none provided
+      setTestCases([
+        {
+          id: 1,
+          input: 'seq1: "ACGTACGT", seq2: "ACGTCT"',
+          expected: 'Score: 3, Aligned sequences shown in description',
+          status: 'idle'
+        },
+        {
+          id: 2,
+          input: 'seq1: "ATTGCC", seq2: "ATGGCT"',
+          expected: 'Score: 1, Appropriate alignment',
+          status: 'idle'
+        }
+      ]);
     }
-  ]);
+  }, [problemData]);
 
   const runTestCase = (id: number) => {
     // Update status to running

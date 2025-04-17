@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,10 +14,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
-import { PlusCircle, Save, Trash } from 'lucide-react';
+import { PlusCircle, Save, Trash, Plus, X } from 'lucide-react';
 import mongoService from '@/services/mongoService';
+import { Card, CardContent } from "@/components/ui/card";
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -36,6 +36,12 @@ type Problem = {
   }[];
   constraints: string[];
   starterCode: Record<string, string>;
+  hints?: string[];
+  testCases?: {
+    id: number;
+    input: string;
+    expected: string;
+  }[];
 };
 
 // Schema for problem form validation
@@ -48,7 +54,14 @@ const problemSchema = z.object({
   exampleOutput: z.string(),
   exampleExplanation: z.string().optional(),
   constraints: z.string(),
-  starterCodeJs: z.string()
+  starterCodeJs: z.string(),
+  hints: z.array(z.object({
+    value: z.string()
+  })),
+  testCases: z.array(z.object({
+    input: z.string(),
+    expected: z.string()
+  }))
 });
 
 interface ProblemEditorProps {
@@ -76,15 +89,25 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       exampleOutput: "",
       exampleExplanation: "",
       constraints: "",
-      starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
+      starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}",
+      hints: [{ value: "" }],
+      testCases: [{ input: "", expected: "" }]
     },
   });
   
-  // Save form state to localStorage whenever it changes
+  const { fields: hintFields, append: appendHint, remove: removeHint } = useFieldArray({
+    control: form.control,
+    name: "hints"
+  });
+  
+  const { fields: testCaseFields, append: appendTestCase, remove: removeTestCase } = useFieldArray({
+    control: form.control,
+    name: "testCases"
+  });
+  
   useEffect(() => {
     const subscription = form.watch((value) => {
       if (value.title || value.description) {
-        // Only save non-empty drafts
         const draftData = {
           formData: value,
           problemId,
@@ -98,7 +121,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
     return () => subscription.unsubscribe();
   }, [form, problemId]);
   
-  // Check for beforeunload event to warn user about unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (form.formState.isDirty) {
@@ -114,16 +136,13 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
     };
   }, [form.formState.isDirty]);
   
-  // Handle visibility change to restore state when tab becomes visible again
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Check if we need to restore from draft
         const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (draftJson) {
           try {
             const draft = JSON.parse(draftJson);
-            // Only restore if it's for the same problem
             if (draft.problemId === problemId) {
               form.reset(draft.formData);
               setHasDraft(true);
@@ -153,37 +172,27 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         try {
           console.log("Loading problem with ID:", problemId);
           
-          // First, try direct method to get a single problem by ID
           const foundProblem = await mongoService.getProblemById(problemId);
           console.log("Direct fetch problem result:", foundProblem);
           
           if (foundProblem) {
             setProblem(foundProblem);
             
-            // Process constraints array to string
             const constraintsText = foundProblem.constraints && Array.isArray(foundProblem.constraints) 
               ? foundProblem.constraints.join('\n') 
               : '';
             
-            // Check if we have a draft first
-            const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
-            if (draftJson) {
-              try {
-                const draft = JSON.parse(draftJson);
-                // Only use draft if it's for this problem
-                if (draft.problemId === problemId) {
-                  form.reset(draft.formData);
-                  setHasDraft(true);
-                  console.log("Loaded draft for problemId:", problemId);
-                  setIsLoading(false);
-                  return; // Skip loading from server data
-                }
-              } catch (e) {
-                console.error("Error parsing draft data", e);
-              }
-            }
+            const hintsArray = foundProblem.hints && Array.isArray(foundProblem.hints) 
+              ? foundProblem.hints.map((hint: string) => ({ value: hint }))
+              : [{ value: "" }];
             
-            // If no usable draft, load from server data
+            const testCasesArray = foundProblem.testCases && Array.isArray(foundProblem.testCases) 
+              ? foundProblem.testCases.map((tc: any) => ({ 
+                  input: tc.input || "", 
+                  expected: tc.expected || "" 
+                }))
+              : [{ input: "", expected: "" }];
+            
             const formValues = {
               title: foundProblem.title || '',
               difficulty: foundProblem.difficulty || 'medium',
@@ -194,22 +203,18 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               exampleExplanation: foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '',
               constraints: constraintsText,
               starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '',
+              hints: hintsArray,
+              testCases: testCasesArray
             };
             
-            console.log("Setting form values:", formValues);
-            
-            // Reset the form with the values
             form.reset(formValues);
             
-            // Force set values to ensure they're properly applied
             Object.entries(formValues).forEach(([key, value]) => {
               form.setValue(key as any, value);
             });
             
             console.log("After setting, form values are:", form.getValues());
           } else {
-            // If direct method fails, try fallback to getting all problems and filtering
-            console.log("Direct problem fetch failed, falling back to all problems");
             const problems = await mongoService.getProblems();
             console.log("All problems:", problems);
             
@@ -220,19 +225,27 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               return;
             }
             
-            // Find the problem with matching ID - make sure to compare as strings
             const foundProblemFromList = problems.find(p => String(p.id) === String(problemId));
             console.log("Found problem from list:", foundProblemFromList);
             
             if (foundProblemFromList) {
               setProblem(foundProblemFromList);
               
-              // Process constraints array to string
               const constraintsText = foundProblemFromList.constraints && Array.isArray(foundProblemFromList.constraints) 
                 ? foundProblemFromList.constraints.join('\n') 
                 : '';
               
-              // If no usable draft, load from server data
+              const hintsArray = foundProblemFromList.hints && Array.isArray(foundProblemFromList.hints) 
+                ? foundProblemFromList.hints.map((hint: string) => ({ value: hint }))
+                : [{ value: "" }];
+              
+              const testCasesArray = foundProblemFromList.testCases && Array.isArray(foundProblemFromList.testCases) 
+                ? foundProblemFromList.testCases.map((tc: any) => ({ 
+                    input: tc.input || "", 
+                    expected: tc.expected || "" 
+                  }))
+                : [{ input: "", expected: "" }];
+              
               const formValues = {
                 title: foundProblemFromList.title || '',
                 difficulty: foundProblemFromList.difficulty || 'medium',
@@ -243,14 +256,12 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
                 exampleExplanation: foundProblemFromList.examples && foundProblemFromList.examples[0] && foundProblemFromList.examples[0].explanation ? foundProblemFromList.examples[0].explanation : '',
                 constraints: constraintsText,
                 starterCodeJs: foundProblemFromList.starterCode && foundProblemFromList.starterCode.javascript ? foundProblemFromList.starterCode.javascript : '',
+                hints: hintsArray,
+                testCases: testCasesArray
               };
               
-              console.log("Setting form values from list:", formValues);
-              
-              // Reset the form with the values
               form.reset(formValues);
               
-              // Force set values to ensure they're properly applied
               Object.entries(formValues).forEach(([key, value]) => {
                 form.setValue(key as any, value);
               });
@@ -269,24 +280,21 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         console.log("Creating new problem");
         setIsNewProblem(true);
         
-        // Check if there's a draft for a new problem
         const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (draftJson) {
           try {
             const draft = JSON.parse(draftJson);
-            // Only use draft if it's for a new problem (no problemId)
             if (!draft.problemId) {
               form.reset(draft.formData);
               setHasDraft(true);
               console.log("Loaded draft for new problem");
-              return; // Skip loading defaults
+              return;
             }
           } catch (e) {
             console.error("Error parsing draft data", e);
           }
         }
         
-        // If no usable draft, use defaults
         form.reset({
           title: "",
           difficulty: "medium",
@@ -296,15 +304,16 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
           exampleOutput: "",
           exampleExplanation: "",
           constraints: "",
-          starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
+          starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}",
+          hints: [{ value: "" }],
+          testCases: [{ input: "", expected: "" }]
         });
       }
     };
     
     loadProblem();
   }, [problemId, form]);
-
-  // Debug log to show current form values
+  
   useEffect(() => {
     console.log("Current form values:", form.getValues());
   }, [form]);
@@ -314,17 +323,26 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
     setIsLoading(true);
     
     try {
-      // Generate slug from title
       const slug = data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
       
-      // Parse constraints into array
       const constraintsArray = data.constraints
         .split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0);
       
+      const hintsArray = data.hints
+        .map(hint => hint.value.trim())
+        .filter(hint => hint.length > 0);
+      
+      const testCasesArray = data.testCases
+        .filter(tc => tc.input.trim().length > 0 || tc.expected.trim().length > 0)
+        .map((tc, index) => ({
+          id: index + 1,
+          input: tc.input.trim(),
+          expected: tc.expected.trim()
+        }));
+      
       if (isNewProblem) {
-        // Load existing problems to generate ID
         const problems = await mongoService.getProblems();
         const id = problems.length > 0 ? Math.max(...problems.map((p: Problem) => p.id)) + 1 : 1;
         
@@ -341,13 +359,14 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             explanation: data.exampleExplanation
           }],
           constraints: constraintsArray,
-          starterCode: { javascript: data.starterCodeJs }
+          starterCode: { javascript: data.starterCodeJs },
+          hints: hintsArray.length > 0 ? hintsArray : undefined,
+          testCases: testCasesArray.length > 0 ? testCasesArray : undefined
         };
         
         await mongoService.createProblem(newProblem);
         toast.success("Problem added successfully!");
       } else {
-        // Update existing problem
         if (problem) {
           const updatedProblem = {
             ...problem,
@@ -365,7 +384,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             starterCode: { 
               ...problem.starterCode,
               javascript: data.starterCodeJs 
-            }
+            },
+            hints: hintsArray.length > 0 ? hintsArray : undefined,
+            testCases: testCasesArray.length > 0 ? testCasesArray : undefined
           };
           
           await mongoService.updateProblem(problemId!, updatedProblem);
@@ -375,11 +396,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         }
       }
       
-      // Clear the draft after successful save
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       setHasDraft(false);
       
-      // Reset form and notify parent component
       form.reset();
       onSave();
     } catch (error) {
@@ -400,7 +419,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         await mongoService.deleteProblem(problemId);
         toast.success("Problem deleted successfully!");
         
-        // Clear any drafts related to this problem
         localStorage.removeItem(DRAFT_STORAGE_KEY);
         setHasDraft(false);
         
@@ -419,7 +437,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       return;
     }
     
-    // Clear the draft when explicitly canceling
     localStorage.removeItem(DRAFT_STORAGE_KEY);
     setHasDraft(false);
     
@@ -431,7 +448,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       setHasDraft(false);
       
-      // Reload the problem data
       if (problemId && problem) {
         const constraintsText = problem.constraints && Array.isArray(problem.constraints) 
           ? problem.constraints.join('\n') 
@@ -449,7 +465,6 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
           starterCodeJs: problem.starterCode && problem.starterCode.javascript ? problem.starterCode.javascript : ''
         });
       } else {
-        // Reset to defaults for new problem
         form.reset({
           title: "",
           difficulty: "medium",
@@ -459,7 +474,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
           exampleOutput: "",
           exampleExplanation: "",
           constraints: "",
-          starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}"
+          starterCodeJs: "function solution(input) {\n  // Your code here\n  return output;\n}",
+          hints: [{ value: "" }],
+          testCases: [{ input: "", expected: "" }]
         });
       }
     }
@@ -686,6 +703,122 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
                 </FormItem>
               )}
             />
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-lg">Hints</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendHint({ value: "" })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Hint
+                </Button>
+              </div>
+              
+              {hintFields.map((field, index) => (
+                <div key={field.id} className="flex gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`hints.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Textarea
+                            placeholder={`Hint ${index + 1}`}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeHint(index)}
+                    className="self-start mt-1"
+                    disabled={hintFields.length === 1}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-lg">Test Cases</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendTestCase({ input: "", expected: "" })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Test Case
+                </Button>
+              </div>
+              
+              {testCaseFields.map((field, index) => (
+                <Card key={field.id} className="p-0 overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">Test Case {index + 1}</h4>
+                      {testCaseFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTestCase(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name={`testCases.${index}.input`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Input</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Test case input"
+                              rows={2}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name={`testCases.${index}.expected`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Expected Output</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Expected result"
+                              rows={2}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
             
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isNewProblem ? (

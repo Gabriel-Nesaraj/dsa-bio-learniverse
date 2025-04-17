@@ -101,7 +101,12 @@ class Solution {
 // Example usage:
 // const result = findPattern("ACGTACGT", "ACG");
 // console.log(result); // Should output [0, 4]`,
-  }
+  },
+  hints: [
+    "Consider using a sliding window approach to compare substrings.",
+    "For more efficient pattern matching, look into algorithms like KMP (Knuth-Morris-Pratt) or Boyer-Moore.",
+    "Remember to handle edge cases, such as when the pattern is longer than the sequence."
+  ]
 };
 
 const ProblemDetail = () => {
@@ -334,20 +339,31 @@ const ProblemDetail = () => {
               
               <TabsContent value="hints" className="p-6 m-0">
                 <div className="space-y-4">
-                  <h3 className="font-medium">Hint 1</h3>
-                  <p className="text-muted-foreground">
-                    Consider using a sliding window approach to compare substrings.
-                  </p>
-                  
-                  <h3 className="font-medium">Hint 2</h3>
-                  <p className="text-muted-foreground">
-                    For more efficient pattern matching, look into algorithms like KMP (Knuth-Morris-Pratt) or Boyer-Moore.
-                  </p>
-                  
-                  <h3 className="font-medium">Hint 3</h3>
-                  <p className="text-muted-foreground">
-                    Remember to handle edge cases, such as when the pattern is longer than the sequence.
-                  </p>
+                  {problem.hints && problem.hints.length > 0 ? (
+                    problem.hints.map((hint, index) => (
+                      <div key={index}>
+                        <h3 className="font-medium">Hint {index + 1}</h3>
+                        <p className="text-muted-foreground">{hint}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <h3 className="font-medium">Hint 1</h3>
+                      <p className="text-muted-foreground">
+                        Consider using a sliding window approach to compare substrings.
+                      </p>
+                      
+                      <h3 className="font-medium">Hint 2</h3>
+                      <p className="text-muted-foreground">
+                        For more efficient pattern matching, look into algorithms like KMP (Knuth-Morris-Pratt) or Boyer-Moore.
+                      </p>
+                      
+                      <h3 className="font-medium">Hint 3</h3>
+                      <p className="text-muted-foreground">
+                        Remember to handle edge cases, such as when the pattern is longer than the sequence.
+                      </p>
+                    </>
+                  )}
                 </div>
               </TabsContent>
               
@@ -449,6 +465,7 @@ const ProblemDetail = () => {
                 <TestCases 
                   code={userCode}
                   language={selectedLanguage}
+                  problemData={problem}
                 />
                 
                 <div className="mt-4 flex justify-between">

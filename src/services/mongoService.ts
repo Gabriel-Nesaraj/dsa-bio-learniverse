@@ -1,4 +1,3 @@
-
 import { toast } from 'sonner';
 
 // MongoDB service for interacting with our backend API
@@ -118,7 +117,24 @@ export class MongoService {
             ],
             starterCode: {
               javascript: "function alignSequences(seq1, seq2) {\n  // Your code here\n  return minimumOperations;\n}"
-            }
+            },
+            hints: [
+              "Consider using dynamic programming to build a matrix of alignment scores.",
+              "Remember to account for gaps in your alignment with appropriate penalties.",
+              "The optimal alignment can be reconstructed by backtracking through your DP matrix."
+            ],
+            testCases: [
+              {
+                id: 1,
+                input: 'seq1: "ACGTACGT", seq2: "ACGGACT"',
+                expected: 'Score: 3, with optimal alignment'
+              },
+              {
+                id: 2,
+                input: 'seq1: "ATTGCC", seq2: "ATGGCT"',
+                expected: 'Score: 2, with proper gap placement'
+              }
+            ]
           },
           {
             id: 2,
@@ -140,7 +156,24 @@ export class MongoService {
             ],
             starterCode: {
               javascript: "function predictFolding(sequence) {\n  // Your code here\n  return maxContacts;\n}"
-            }
+            },
+            hints: [
+              "Consider the protein as a self-avoiding walk on a 2D lattice.",
+              "The goal is to maximize the number of H-H contacts that are not along the backbone.",
+              "You might need to implement a search algorithm to explore possible configurations."
+            ],
+            testCases: [
+              {
+                id: 1,
+                input: 'sequence: "HPHPPH"',
+                expected: 'Maximum contacts: 2'
+              },
+              {
+                id: 2,
+                input: 'sequence: "HPPHPPH"',
+                expected: 'Maximum contacts: 2'
+              }
+            ]
           },
           {
             id: 3,
@@ -163,7 +196,24 @@ export class MongoService {
             ],
             starterCode: {
               javascript: "function clusterGenes(k, geneExpressions) {\n  // Your code here\n  return clusters;\n}"
-            }
+            },
+            hints: [
+              "K-means consists of initialization, assignment, and update steps repeated until convergence.",
+              "For initialization, you can randomly select k data points as initial centroids.",
+              "Use Euclidean distance to measure similarity between gene expression profiles."
+            ],
+            testCases: [
+              {
+                id: 1,
+                input: 'k: 2, expressions: [[1,2,3],[5,6,7],[2,3,4],[8,9,10]]',
+                expected: 'Clusters: [[0,2],[1,3]]'
+              },
+              {
+                id: 2,
+                input: 'k: 3, expressions: [[1,1],[2,2],[8,8],[9,9],[15,15]]',
+                expected: 'Clusters: [[0,1],[2,3],[4]]'
+              }
+            ]
           }
         ];
         localStorage.setItem('problems', JSON.stringify(sampleProblems));
