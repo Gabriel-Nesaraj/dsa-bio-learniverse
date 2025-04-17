@@ -151,15 +151,22 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         try {
           console.log("Loading problem with ID:", problemId);
           
-          // Directly fetch the specific problem
+          // Fetch all problems first
           const problems = await mongoService.getProblems();
-          console.log("All problems:", problems);
+          console.log("All problems fetched:", problems);
+          
+          if (!Array.isArray(problems)) {
+            console.error("Expected array of problems but got:", typeof problems);
+            toast.error("Error loading problems: Invalid data format");
+            setIsLoading(false);
+            return;
+          }
           
           // Find the problem with the matching ID
-          const foundProblem = problems.find((p: Problem) => p.id === problemId);
+          const foundProblem = problems.find(p => p.id === problemId);
+          console.log("Found problem for ID", problemId, ":", foundProblem);
           
           if (foundProblem) {
-            console.log("Found problem for editing:", foundProblem);
             setProblem(foundProblem);
             
             // Process constraints array to string
@@ -188,7 +195,7 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             // If no usable draft, load from server data
             console.log("Setting form values from problem:", foundProblem);
             
-            form.reset({
+            const formValues = {
               title: foundProblem.title || '',
               difficulty: foundProblem.difficulty || 'medium',
               category: foundProblem.category || 'dynamic-programming',
@@ -198,26 +205,24 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
               exampleExplanation: foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '',
               constraints: constraintsText,
               starterCodeJs: foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '',
+            };
+            
+            console.log("Form values to set:", formValues);
+            form.reset(formValues);
+            
+            // Force update form values to ensure they are set properly
+            Object.entries(formValues).forEach(([key, value]) => {
+              form.setValue(key as any, value);
             });
             
-            // Force update form values if they're not being set properly
-            form.setValue('title', foundProblem.title || '');
-            form.setValue('difficulty', foundProblem.difficulty || 'medium');
-            form.setValue('category', foundProblem.category || 'dynamic-programming');
-            form.setValue('description', foundProblem.description || '');
-            form.setValue('exampleInput', foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].input || '' : '');
-            form.setValue('exampleOutput', foundProblem.examples && foundProblem.examples[0] ? foundProblem.examples[0].output || '' : '');
-            form.setValue('exampleExplanation', foundProblem.examples && foundProblem.examples[0] && foundProblem.examples[0].explanation ? foundProblem.examples[0].explanation : '');
-            form.setValue('constraints', constraintsText);
-            form.setValue('starterCodeJs', foundProblem.starterCode && foundProblem.starterCode.javascript ? foundProblem.starterCode.javascript : '');
-            
+            console.log("Form values after reset:", form.getValues());
           } else {
             console.error("Problem not found with ID:", problemId);
             toast.error("Problem not found");
           }
         } catch (error) {
           console.error("Error loading problem:", error);
-          toast.error("Error loading problem");
+          toast.error("Error loading problem: " + (error instanceof Error ? error.message : String(error)));
         } finally {
           setIsLoading(false);
         }

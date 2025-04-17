@@ -342,13 +342,13 @@ const Admin = () => {
                 <ProblemViewer 
                   problem={selectedProblem} 
                   onBack={handleProblemCancel}
-                  onEdit={handleEditProblem}
+                  onEdit={() => handleEditProblem(selectedProblem.id)}
                 />
               )}
               
               {problemView === 'edit' && (
                 <ProblemEditor 
-                  problemId={selectedProblemId !== null ? selectedProblemId : undefined}
+                  problemId={selectedProblemId}
                   onSave={handleProblemSaved}
                   onCancel={handleProblemCancel}
                 />
