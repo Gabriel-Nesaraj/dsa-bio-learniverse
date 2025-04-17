@@ -153,20 +153,9 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
         try {
           console.log("Loading problem with ID:", problemId);
           
-          // Fetch problem directly from MongoDB service
-          const problems = await mongoService.getProblems();
-          console.log("All problems:", problems);
-          
-          if (!Array.isArray(problems)) {
-            console.error("Expected array of problems but got:", typeof problems);
-            toast.error("Error loading problems: Invalid data format");
-            setIsLoading(false);
-            return;
-          }
-          
-          // Find the problem with matching ID
-          const foundProblem = problems.find(p => p.id === problemId);
-          console.log("Found problem:", foundProblem);
+          // First, try direct method to get a single problem by ID
+          const foundProblem = await mongoService.getProblemById(problemId);
+          console.log("Direct fetch problem result:", foundProblem);
           
           if (foundProblem) {
             setProblem(foundProblem);
@@ -219,8 +208,56 @@ const ProblemEditor: React.FC<ProblemEditorProps> = ({ problemId, onSave, onCanc
             
             console.log("After setting, form values are:", form.getValues());
           } else {
-            console.error("Problem not found with ID:", problemId);
-            toast.error("Problem not found");
+            // If direct method fails, try fallback to getting all problems and filtering
+            console.log("Direct problem fetch failed, falling back to all problems");
+            const problems = await mongoService.getProblems();
+            console.log("All problems:", problems);
+            
+            if (!Array.isArray(problems)) {
+              console.error("Expected array of problems but got:", typeof problems);
+              toast.error("Error loading problems: Invalid data format");
+              setIsLoading(false);
+              return;
+            }
+            
+            // Find the problem with matching ID - make sure to compare as strings
+            const foundProblemFromList = problems.find(p => String(p.id) === String(problemId));
+            console.log("Found problem from list:", foundProblemFromList);
+            
+            if (foundProblemFromList) {
+              setProblem(foundProblemFromList);
+              
+              // Process constraints array to string
+              const constraintsText = foundProblemFromList.constraints && Array.isArray(foundProblemFromList.constraints) 
+                ? foundProblemFromList.constraints.join('\n') 
+                : '';
+              
+              // If no usable draft, load from server data
+              const formValues = {
+                title: foundProblemFromList.title || '',
+                difficulty: foundProblemFromList.difficulty || 'medium',
+                category: foundProblemFromList.category || 'dynamic-programming',
+                description: foundProblemFromList.description || '',
+                exampleInput: foundProblemFromList.examples && foundProblemFromList.examples[0] ? foundProblemFromList.examples[0].input || '' : '',
+                exampleOutput: foundProblemFromList.examples && foundProblemFromList.examples[0] ? foundProblemFromList.examples[0].output || '' : '',
+                exampleExplanation: foundProblemFromList.examples && foundProblemFromList.examples[0] && foundProblemFromList.examples[0].explanation ? foundProblemFromList.examples[0].explanation : '',
+                constraints: constraintsText,
+                starterCodeJs: foundProblemFromList.starterCode && foundProblemFromList.starterCode.javascript ? foundProblemFromList.starterCode.javascript : '',
+              };
+              
+              console.log("Setting form values from list:", formValues);
+              
+              // Reset the form with the values
+              form.reset(formValues);
+              
+              // Force set values to ensure they're properly applied
+              Object.entries(formValues).forEach(([key, value]) => {
+                form.setValue(key as any, value);
+              });
+            } else {
+              console.error("Problem not found with ID:", problemId);
+              toast.error("Problem not found");
+            }
           }
         } catch (error) {
           console.error("Error loading problem:", error);

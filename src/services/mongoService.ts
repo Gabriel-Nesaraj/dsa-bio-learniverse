@@ -1,3 +1,4 @@
+
 import { toast } from 'sonner';
 
 // MongoDB service for interacting with our backend API
@@ -177,6 +178,7 @@ export class MongoService {
         // Get by ID
         const id = idMatch[1];
         const items = data ? JSON.parse(data) : [];
+        // Use strict comparison for ID - convert both to strings first
         const item = items.find((item: any) => String(item.id) === String(id));
         console.log(`Looking for item with ID: ${id}, found:`, item);
         return item as unknown as T;
@@ -212,7 +214,7 @@ export class MongoService {
         const updatedItem = JSON.parse(options.body.toString());
         
         const updatedItems = items.map((item: any) => 
-          item.id.toString() === id ? updatedItem : item
+          String(item.id) === String(id) ? updatedItem : item
         );
         
         localStorage.setItem(collection, JSON.stringify(updatedItems));
@@ -227,7 +229,7 @@ export class MongoService {
         const items = data ? JSON.parse(data) : [];
         
         const updatedItems = items.filter((item: any) => 
-          item.id.toString() !== id
+          String(item.id) !== String(id)
         );
         
         localStorage.setItem(collection, JSON.stringify(updatedItems));
