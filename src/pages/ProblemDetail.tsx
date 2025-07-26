@@ -176,9 +176,11 @@ const ProblemDetail = () => {
 
   const handleRunTests = () => {
     toast.info("Running all tests...");
+    // Trigger all test cases to run by broadcasting an event
+    window.dispatchEvent(new CustomEvent('runAllTests'));
     setTimeout(() => {
       toast.success("All tests completed!");
-    }, 1500);
+    }, 3000);
   };
 
   const handleSubmit = () => {

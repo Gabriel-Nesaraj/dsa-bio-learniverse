@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlayCircle, CheckCircle, XCircle } from 'lucide-react';
+import DNAAnimation from './DNAAnimation';
+import ProteinAnimation from './ProteinAnimation';
 
 interface TestCase {
   id: number;
@@ -20,6 +22,8 @@ interface TestCasesProps {
       input: string;
       expected: string;
     }[];
+    category?: string;
+    title?: string;
   };
 }
 
@@ -55,6 +59,62 @@ const TestCases: React.FC<TestCasesProps> = ({ code, language, problemData }) =>
     }
   }, [problemData]);
 
+  // Listen for "run all tests" event
+  useEffect(() => {
+    const handleRunAllTests = () => {
+      setTestCases(prev => prev.map(tc => ({ ...tc, status: 'running' })));
+      
+      // Simulate running each test case with staggered timing
+      testCases.forEach((tc, index) => {
+        setTimeout(() => {
+          setTestCases(prev => 
+            prev.map(testCase => {
+              if (testCase.id === tc.id) {
+                const success = Math.random() > 0.3;
+                return {
+                  ...testCase,
+                  status: success ? 'success' : 'error',
+                  result: success 
+                    ? 'Score: ' + (testCase.id === 1 ? '3' : '1') + ', Analysis successful'
+                    : 'Error: Incorrect analysis'
+                };
+              }
+              return testCase;
+            })
+          );
+        }, 2000 + index * 500);
+      });
+    };
+
+    window.addEventListener('runAllTests', handleRunAllTests);
+    return () => window.removeEventListener('runAllTests', handleRunAllTests);
+  }, [testCases]);
+
+  const getAnimationType = () => {
+    const title = problemData?.title?.toLowerCase() || '';
+    const category = problemData?.category?.toLowerCase() || '';
+    
+    if (title.includes('dna') || title.includes('sequence') || title.includes('alignment')) {
+      if (title.includes('pattern') || title.includes('matching')) return 'pattern-matching';
+      if (title.includes('mutation')) return 'mutation';
+      return 'alignment';
+    }
+    
+    if (title.includes('protein') || category.includes('protein')) {
+      if (title.includes('folding')) return 'folding';
+      if (title.includes('binding')) return 'binding';
+      return 'structure';
+    }
+    
+    return 'alignment'; // default
+  };
+
+  const isProteinProblem = () => {
+    const title = problemData?.title?.toLowerCase() || '';
+    const category = problemData?.category?.toLowerCase() || '';
+    return title.includes('protein') || category.includes('protein');
+  };
+
   const runTestCase = (id: number) => {
     // Update status to running
     setTestCases(prev => 
@@ -68,20 +128,20 @@ const TestCases: React.FC<TestCasesProps> = ({ code, language, problemData }) =>
       setTestCases(prev => 
         prev.map(tc => {
           if (tc.id === id) {
-            // Simulate test result (50/50 chance of success)
-            const success = Math.random() > 0.5;
+            // Simulate test result (70% chance of success for better demo)
+            const success = Math.random() > 0.3;
             return { 
               ...tc, 
               status: success ? 'success' : 'error',
               result: success 
-                ? 'Score: ' + (tc.id === 1 ? '3' : '1') + ', Alignment successful'
-                : 'Error: Incorrect alignment'
+                ? 'Score: ' + (tc.id === 1 ? '3' : '1') + ', Analysis successful'
+                : 'Error: Incorrect analysis'
             };
           }
           return tc;
         })
       );
-    }, 1500);
+    }, 2000);
   };
 
   return (
@@ -118,6 +178,26 @@ const TestCases: React.FC<TestCasesProps> = ({ code, language, problemData }) =>
               {testCase.status === 'idle' && "Run"}
             </Button>
           </div>
+          
+          {/* Animation section */}
+          {(testCase.status === 'running' || testCase.status === 'success' || testCase.status === 'error') && (
+            <div className="p-3 border-b">
+              {isProteinProblem() ? (
+                <ProteinAnimation
+                  isRunning={testCase.status === 'running'}
+                  type={getAnimationType() as 'folding' | 'structure' | 'binding'}
+                  status={testCase.status}
+                />
+              ) : (
+                <DNAAnimation
+                  isRunning={testCase.status === 'running'}
+                  type={getAnimationType() as 'alignment' | 'pattern-matching' | 'mutation'}
+                  status={testCase.status}
+                />
+              )}
+            </div>
+          )}
+          
           <div className="p-3 text-sm">
             <div className="mb-2">
               <span className="text-muted-foreground">Input: </span>
